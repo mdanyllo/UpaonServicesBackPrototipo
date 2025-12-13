@@ -1,0 +1,23 @@
+{
+  "name": "upaonservices-backend",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Backend UpaonServices - Express + Prisma",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "node src/server.js",
+    "prisma": "prisma"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "express": "^4.22.1"
+  },
+  "devDependencies": {
+    "prisma": "^5.22.0"
+  }
+}
