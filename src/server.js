@@ -10,10 +10,11 @@ app.use(express.json())
 app.use("/auth", authRoutes)
 
 app.get("/", (req, res) => {
-  return res.status(201).json({
-    id: user.id,
-    name: user.name,
-    email: user.email,
+  return res.status(200).json({
+    status: "ok",
+    message: "Backend rodando",
+    api: "Upaon Services",
+    version: "1.0.0"
   })
 })
 
