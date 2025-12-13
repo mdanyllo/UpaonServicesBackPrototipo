@@ -14,5 +14,9 @@ app.get("/", (req, res) => {
 })
 
 app.listen(3333, () => {
-  console.log("🔥 Backend rodando em http://localhost:3333")
+  return res.status(201).json({
+    id: user.id,
+    name: user.name,
+    email: user.email,
+  })
 })
