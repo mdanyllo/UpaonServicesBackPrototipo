@@ -4,16 +4,12 @@
   "type": "module",
   "scripts": {
     "dev": "node src/server.js",
-    "start": "node src/server.js",
-    "postinstall": "prisma generate"
+    "start": "node src/server.js"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "express": "^4.19.2"
-  },
-  "devDependencies": {
-    "prisma": "^5.22.0"
   }
 }
