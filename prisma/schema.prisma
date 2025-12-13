@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
@@ -68,7 +69,7 @@ model Order {
   id          String       @id @default(uuid())
   clientId    String
   providerId  String
-  serviceId   Stringç
+  serviceId   String
   status      OrderStatus @default(PENDING)
 
   client      User        @relation(fields: [clientId], references: [id])
