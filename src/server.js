@@ -10,8 +10,10 @@ const URL = "https://upaonservicesbackprototipo.onrender.com/"
 app.use(
   cors({
     origin: [
-      "http://localhost:3333",          // dev
-      "https://upaonservices.vercel.app" // produção
+      "http://localhost:3333",      
+      "https://upaonservices.vercel.app",
+      "https://upaonservices.com.br",
+    "https://www.upaonservices.com.br",
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true
