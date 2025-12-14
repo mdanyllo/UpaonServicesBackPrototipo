@@ -2,12 +2,22 @@ import express from "express"
 import cors from "cors"
 import { authRoutes } from "./routes/auth.js"
 import { userRoutes } from "./routes/users.js"
+import cors from "cors"
 import https from "https";
 
 const app = express()
 const URL = "https://upaonservicesbackprototipo.onrender.com/"
 
-app.use(cors())
+app.use(
+  cors({
+    origin: [
+      "http://localhost:3333",          // dev
+      "https://upaonservices.vercel.app" // produção
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true
+  })
+)
 app.use(express.json())
 
 app.use("/auth", authRoutes)

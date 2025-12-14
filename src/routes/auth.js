@@ -6,12 +6,15 @@ import jwt from "jsonwebtoken"
 export const authRoutes = Router()
 
 //cadastro
-
 authRoutes.post("/register", async (req, res) => {
   const { name, email, password, phone, role, description } = req.body
 
-  if (!name || !email || !password) {
+  if (!name || !email || !password || !role) {
     return res.status(400).json({ message: "Dados obrigatórios" })
+  }
+
+  if (!["CLIENT", "PROVIDER"].includes(role)) {
+    return res.status(400).json({ message: "Tipo de usuário inválido" })
   }
 
   const userExists = await prisma.user.findUnique({
@@ -50,7 +53,6 @@ authRoutes.post("/register", async (req, res) => {
     phone: user.phone,
     role: user.role,
   })
-
 })
 
 //Login
