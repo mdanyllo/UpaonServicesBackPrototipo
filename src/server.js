@@ -2,9 +2,9 @@ import express from "express"
 import cors from "cors"
 import { authRoutes } from "./routes/auth.js"
 import { userRoutes } from "./routes/users.js"
+import https from "https";
 
 const app = express()
-const https = require("https");
 const URL = "https://upaonservicesbackprototipo.onrender.com/"
 
 app.use(cors())
