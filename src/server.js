@@ -4,12 +4,13 @@ import { authRoutes } from "./routes/auth.js"
 import { userRoutes } from "./routes/users.js"
 
 const app = express()
+const https = require("https");
+const URL = "https://upaonservicesbackprototipo.onrender.com/"
 
 app.use(cors())
 app.use(express.json())
 
 app.use("/auth", authRoutes)
-
 app.use("/users", userRoutes)
 
 app.get("/", (req, res) => {
@@ -24,3 +25,13 @@ app.get("/", (req, res) => {
 app.listen(3333, () => {
   console.log("Backend rodando")
 })
+
+setInterval(() => {
+  https
+    .get(URL, res => {
+      console.log("Ping OK:", res.statusCode);
+    })
+    .on("error", err => {
+      console.error("Erro no ping:", err.message);
+    });
+}, 14 * 60 * 1000);
