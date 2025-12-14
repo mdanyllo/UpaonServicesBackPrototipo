@@ -1,48 +1,57 @@
 import express from "express"
 import cors from "cors"
+import https from "https"
+
 import { authRoutes } from "./routes/auth.js"
 import { userRoutes } from "./routes/users.js"
-import https from "https";
 
 const app = express()
-const URL = "https://upaonservicesbackprototipo.onrender.com/"
 
+const PORT = process.env.PORT || 3333
+const SELF_PING_URL = "https://upaonservicesbackprototipo.onrender.com"
+
+// ✅ CORS AJUSTADO (sem credentials)
 app.use(
   cors({
     origin: [
-      "http://localhost:3333",      
+      "http://localhost:3000",
+      "http://localhost:5173",
       "https://upaonservices.vercel.app",
       "https://upaonservices.com.br",
-    "https://www.upaonservices.com.br",
+      "https://www.upaonservices.com.br",
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true
   })
 )
+
 app.use(express.json())
 
+// Rotas
 app.use("/auth", authRoutes)
 app.use("/users", userRoutes)
 
+// Health check
 app.get("/", (req, res) => {
   return res.status(200).json({
     status: "ok",
-    message: "Backend rodando",
+    message: "Backend rodando 🚀",
     api: "Upaon Services",
-    version: "1.0.0"
+    version: "1.0.0",
   })
 })
 
-app.listen(3333, () => {
-  console.log("Backend rodando")
+// 🔥 PORTA CORRETA PARA O RENDER
+app.listen(PORT, () => {
+  console.log(`Backend rodando na porta ${PORT}`)
 })
 
+// 🔁 Auto-ping (mantém o Render acordado)
 setInterval(() => {
   https
-    .get(URL, res => {
-      console.log("Ping OK:", res.statusCode);
+    .get(SELF_PING_URL, (res) => {
+      console.log("Ping OK:", res.statusCode)
     })
-    .on("error", err => {
-      console.error("Erro no ping:", err.message);
-    });
-}, 14 * 60 * 1000);
+    .on("error", (err) => {
+      console.error("Erro no ping:", err.message)
+    })
+}, 14 * 60 * 1000)
