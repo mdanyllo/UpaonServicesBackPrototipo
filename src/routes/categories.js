@@ -28,4 +28,4 @@ categoriesRoutes.get("/", async (req, res) => {
   }
 })
 
-export default router
+export default categoriesRoutes
