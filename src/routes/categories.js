@@ -1,10 +1,10 @@
 import { Router } from "express"
 import { prisma } from "../prisma.js"
 
-const router = Router()
+export const categoriesRoutes = Router()
 
 // Lista categorias únicas dos prestadores
-router.get("/", async (req, res) => {
+categoriesRoutes.get("/", async (req, res) => {
   try {
     const categories = await prisma.provider.findMany({
       where: {
