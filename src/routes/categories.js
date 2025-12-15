@@ -1,7 +1,7 @@
 import { Router } from "express"
 import { prisma } from "../prisma.js"
 
-export const categoriesRoutes = Router()
+const categoriesRoutes = Router()
 
 // Lista categorias únicas dos prestadores
 categoriesRoutes.get("/", async (req, res) => {

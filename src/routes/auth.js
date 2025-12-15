@@ -3,7 +3,7 @@ import { prisma } from "../prisma.js"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
 
-export const authRoutes = Router()
+const authRoutes = Router()
 
 //cadastro
 authRoutes.post("/register", async (req, res) => {
@@ -119,4 +119,6 @@ authRoutes.post("/login", async (req, res) => {
     },
   })
 })
+
+export default authRoutes
 

@@ -1,7 +1,7 @@
 import { Router } from "express"
 import { prisma } from "../prisma.js"
 
-export const providersRoutes = Router()
+const providersRoutes = Router()
 
 // Prestadores por categoria
 providersRoutes.get("/:category", async (req, res) => {
@@ -27,3 +27,5 @@ providersRoutes.get("/:category", async (req, res) => {
 
   return res.json(providers)
 })
+
+export default providersRoutes

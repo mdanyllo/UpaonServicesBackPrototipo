@@ -2,11 +2,12 @@ import express from "express"
 import cors from "cors"
 import https from "https"
 
-import { authRoutes } from "./routes/auth.js"
-import { userRoutes } from "./routes/users.js"
-import { statsRoutes} from "./routes/stats.js"
-import { categoriesRoutes } from "./routes/categories.js"
-import { providersRoutes } from "./routes/providers.js"
+import authRoutes from "./routes/auth.js"
+import userRoutes from "./routes/users.js"
+import statsRoutes from "./routes/stats.js"
+import categoriesRoutes from "./routes/categories.js"
+import providersRoutes from "./routes/providers.js"
+
 
 const app = express()
 

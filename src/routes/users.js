@@ -1,7 +1,7 @@
 import { Router } from "express"
 import { prisma } from "../prisma.js"
 
-export const userRoutes = Router()
+const userRoutes = Router()
 
 userRoutes.get("/", async (req, res) => {
   const users = await prisma.user.findMany({
@@ -17,3 +17,5 @@ userRoutes.get("/", async (req, res) => {
 
   return res.json(users)
 })
+
+export default userRoutes

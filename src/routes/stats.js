@@ -1,7 +1,7 @@
 import { Router } from "express"
 import { prisma } from "../prisma.js"
 
-export const statsRoutes = Router()
+const statsRoutes = Router()
 
 statsRoutes.get("/", async (req, res) => {
   try {
@@ -18,3 +18,5 @@ statsRoutes.get("/", async (req, res) => {
     res.status(500).json({ message: "Erro ao buscar estatísticas" })
   }
 })
+
+export default statsRoutes
