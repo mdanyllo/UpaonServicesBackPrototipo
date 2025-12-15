@@ -7,14 +7,18 @@ export const authRoutes = Router()
 
 //cadastro
 authRoutes.post("/register", async (req, res) => {
-  const { name, email, password, phone, role, description } = req.body
+  const {
+    name,
+    email,
+    password,
+    phone,
+    role,
+    category,
+    description,
+  } = req.body
 
   if (!name || !email || !password || !role) {
     return res.status(400).json({ message: "Dados obrigatórios" })
-  }
-
-  if (!["CLIENT", "PROVIDER"].includes(role)) {
-    return res.status(400).json({ message: "Tipo de usuário inválido" })
   }
 
   const userExists = await prisma.user.findUnique({
@@ -38,9 +42,14 @@ authRoutes.post("/register", async (req, res) => {
   })
 
   if (role === "PROVIDER") {
+    if (!category) {
+      return res.status(400).json({ message: "Categoria obrigatória" })
+    }
+
     await prisma.provider.create({
       data: {
         userId: user.id,
+        category,
         description: description || null,
       },
     })
@@ -50,10 +59,10 @@ authRoutes.post("/register", async (req, res) => {
     id: user.id,
     name: user.name,
     email: user.email,
-    phone: user.phone,
     role: user.role,
   })
 })
+
 
 //Login
 

@@ -5,6 +5,7 @@ import https from "https"
 import { authRoutes } from "./routes/auth.js"
 import { userRoutes } from "./routes/users.js"
 import { statsRoutes} from "./routes/stats.js"
+import categoriesRoutes from "./routes/categories.js"
 
 const app = express()
 
@@ -31,6 +32,8 @@ app.use(express.json())
 app.use("/auth", authRoutes)
 app.use("/users", userRoutes)
 app.use("/stats", statsRoutes)
+app.use("/categories", categoriesRoutes)
+
 
 // Health check
 app.get("/", (req, res) => {

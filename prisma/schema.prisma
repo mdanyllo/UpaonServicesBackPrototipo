@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
@@ -28,7 +28,7 @@ model User {
   email     String   @unique
   password  String
   phone     String?
-  role      UserRole
+  role      UserRole @default(CLIENT)
 
   provider  Provider?
   orders    Order[]
@@ -40,6 +40,8 @@ model User {
 model Provider {
   id          String   @id @default(uuid())
   userId      String   @unique
+
+  category    String            // 👈 CATEGORIA FIXA DO PRESTADOR
   description String?
   rating      Float    @default(0)
 
@@ -49,6 +51,8 @@ model Provider {
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([category])           // 👈 MUITO IMPORTANTE (filtros + SEO)
 }
 
 model Service {
