@@ -4,7 +4,7 @@ import { prisma } from "../prisma.js"
 export const providersRoutes = Router()
 
 // Prestadores por categoria
-categoryRoutes.get("/:category", async (req, res) => {
+providersRoutes.get("/:category", async (req, res) => {
   const { category } = req.params
 
   const providers = await prisma.provider.findMany({
