@@ -4,7 +4,6 @@
   "type": "module",
   "scripts": {
     "dev": "node src/server.js",
-    "postinstall": "npx prisma generate",
     "start": "node src/server.js"
   },
   "dependencies": {
