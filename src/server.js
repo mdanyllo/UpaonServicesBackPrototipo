@@ -15,17 +15,28 @@ const SELF_PING_URL = "https://upaonservicesbackprototipo.onrender.com"
 
 app.use(
   cors({
-    origin: [
-      "http://localhost:8080",
-      "http://localhost:3000",
-      "http://localhost:5173",
-      "https://upaonservices.vercel.app",
-      "https://upaonservices.com.br",
-      "https://www.upaonservices.com.br",
-    ],
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    origin: (origin, callback) => {
+      const allowedOrigins = [
+        "http://localhost:8080",
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "https://upaonservices.vercel.app",
+        "https://upaonservices.com.br",
+        "https://www.upaonservices.com.br",
+      ]
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true)
+      } else {
+        callback(new Error("Não permitido por CORS"))
+      }
+    },
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 )
+
+// Permitir preflight para todas as rotas
+app.options("*", cors())
 
 app.use(express.json())
 
