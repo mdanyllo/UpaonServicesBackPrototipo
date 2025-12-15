@@ -4,16 +4,17 @@ import https from "https"
 
 import { authRoutes } from "./routes/auth.js"
 import { userRoutes } from "./routes/users.js"
+import { statsRoutes} from "./routes/stats.js"
 
 const app = express()
 
 const PORT = process.env.PORT || 3333
 const SELF_PING_URL = "https://upaonservicesbackprototipo.onrender.com"
 
-// ✅ CORS AJUSTADO (sem credentials)
 app.use(
   cors({
     origin: [
+      "http://localhost:8080",
       "http://localhost:3000",
       "http://localhost:5173",
       "https://upaonservices.vercel.app",
@@ -29,6 +30,7 @@ app.use(express.json())
 // Rotas
 app.use("/auth", authRoutes)
 app.use("/users", userRoutes)
+app.use("/stats", statsRoutes)
 
 // Health check
 app.get("/", (req, res) => {
