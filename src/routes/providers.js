@@ -3,20 +3,45 @@ import { prisma } from "../prisma.js"
 
 const providersRoutes = Router()
 
-// ✅ LISTA / FILTRA PRESTADORES
+// 🔍 BUSCA AVANÇADA DE PRESTADORES
 providersRoutes.get("/", async (req, res) => {
-  const { category } = req.query
+  const { category, q } = req.query
 
   try {
     const providers = await prisma.provider.findMany({
-      where: category
-        ? {
-            category: {
-              equals: category,
-              mode: "insensitive",
-            },
-          }
-        : undefined,
+      where: {
+        AND: [
+          category
+            ? {
+                category: {
+                  equals: category,
+                  mode: "insensitive",
+                },
+              }
+            : {},
+
+          q
+            ? {
+                OR: [
+                  {
+                    description: {
+                      contains: q,
+                      mode: "insensitive",
+                    },
+                  },
+                  {
+                    user: {
+                      name: {
+                        contains: q,
+                        mode: "insensitive",
+                      },
+                    },
+                  },
+                ],
+              }
+            : {},
+        ],
+      },
       include: {
         user: {
           select: {
