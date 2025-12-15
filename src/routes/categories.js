@@ -3,7 +3,7 @@ import { prisma } from "../prisma.js"
 
 const categoriesRoutes = Router()
 
-// 📌 Lista categorias
+// 📌 Lista categorias únicas
 categoriesRoutes.get("/", async (req, res) => {
   try {
     const categories = await prisma.provider.findMany({
@@ -23,39 +23,9 @@ categoriesRoutes.get("/", async (req, res) => {
     return res.json(cleanCategories)
   } catch (error) {
     console.error("Erro rota categories:", error)
-    return res.status(500).json({ message: "Erro ao buscar categorias" })
-  }
-})
-
-// 📌 Prestadores por categoria
-categoriesRoutes.get("/:category", async (req, res) => {
-  const { category } = req.params
-
-  try {
-    const providers = await prisma.provider.findMany({
-      where: {
-        category: {
-          equals: category,
-          mode: "insensitive", // ignora maiúsculas/minúsculas
-        },
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            phone: true,
-          },
-        },
-      },
+    return res.status(500).json({
+      message: "Erro ao buscar categorias",
     })
-
-    return res.json(providers)
-  } catch (error) {
-    console.error("Erro rota categoria:", error)
-    return res
-      .status(500)
-      .json({ message: "Erro ao buscar prestadores da categoria" })
   }
 })
 
