@@ -3,27 +3,28 @@ import { prisma } from "../prisma.js"
 
 const categoriesRoutes = Router()
 
-// Lista categorias únicas dos prestadores
 categoriesRoutes.get("/", async (req, res) => {
   try {
+    // BUSCA LIMPA: Sem 'where' para não dar conflito com o Prisma
     const categories = await prisma.provider.findMany({
-      where: {
-        category: {
-          not: null,
-        },
-      },
       select: {
         category: true,
       },
-      distinct: ["category"],
+      distinct: ["category"], // Isso já garante que não vem repetido
       orderBy: {
         category: "asc",
       },
     })
 
-    return res.json(categories.map(c => c.category))
+    // FILTRO NO JAVASCRIPT: Removemos nulos e vazios aqui, é mais seguro agora
+    const cleanCategories = categories
+      .map(c => c.category)
+      .filter(c => c !== null && c !== "")
+
+    return res.json(cleanCategories)
+    
   } catch (error) {
-    console.error(error)
+    console.error("Erro rota categories:", error)
     return res.status(500).json({ message: "Erro ao buscar categorias" })
   }
 })

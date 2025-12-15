@@ -48,12 +48,11 @@ app.get("/", (req, res) => {
   })
 })
 
-// 🔥 PORTA CORRETA PARA O RENDER
 app.listen(PORT, () => {
   console.log(`Backend rodando na porta ${PORT}`)
 })
 
-// 🔁 Auto-ping (mantém o Render acordado)
+// mantém o Render acordado
 setInterval(() => {
   https
     .get(SELF_PING_URL, (res) => {
