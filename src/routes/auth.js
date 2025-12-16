@@ -77,62 +77,76 @@ authRoutes.post("/register", async (req, res) => {
 //Login
 
 authRoutes.post("/login", async (req, res) => {
-  const { email, password } = req.body
+  try {
+    const { email, password } = req.body
 
-  if (!email || !password) {
-    return res.status(400).json({ message: "Email e senha são obrigatórios" })
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { email },
-    include: {
-      provider: true,
-    },
-  })
-
-  if (!user) {
-    return res.status(401).json({ message: "Credenciais inválidas" })
-  }
-
-  const passwordMatch = await bcrypt.compare(password, user.password)
-
-  if (!passwordMatch) {
-    return res.status(401).json({ message: "Credenciais inválidas" })
-  }
-
-  const token = jwt.sign(
-    {
-      sub: user.id,
-      role: user.role,
-    },
-    process.env.JWT_SECRET,
-    {
-      expiresIn: "7d",
+    // Validação
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email e senha são obrigatórios" })
     }
-  )
 
-  return res.json({
-    token,
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      role: user.role,
+    // Busca User + Dados do Provider (Join)
+    const user = await prisma.user.findUnique({
+      where: { email },
+      include: {
+        provider: true, // <--- O Prisma busca os dados da tabela Provider aqui
+      },
+    })
 
-      city: user.provider?.city || "São Luís - MA",
-      neighborhood: user.provider?.neighborhood || null,
+    if (!user) {
+      return res.status(401).json({ message: "Email ou senha incorretos" })
+    }
 
-      provider: user.provider
-        ? {
-            id: user.provider.id,
-            description: user.provider.description,
-            rating: user.provider.rating,
-          }
-        : null,
-    },
-  })
+    const passwordMatch = await bcrypt.compare(password, user.password)
+
+    if (!passwordMatch) {
+      return res.status(401).json({ message: "Email ou senha incorretos" })
+    }
+
+    // Gera o Token
+    const token = jwt.sign(
+      {
+        sub: user.id,
+        role: user.role,
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "7d",
+      }
+    )
+
+    // Retorna os dados organizados
+    return res.json({
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        avatarUrl: user.avatarUrl, // Se tiver implementado a foto
+
+        // AQUI ESTÁ A CORREÇÃO:
+        // O '?' (interrogação) é vital. Se for um Cliente logando,
+        // user.provider é null. O '?' impede o código de quebrar.
+        city: user.provider?.city || "São Luís - MA", 
+        neighborhood: user.provider?.neighborhood || null,
+
+        // Dados extras do prestador, se existirem
+        provider: user.provider
+          ? {
+              id: user.provider.id,
+              description: user.provider.description,
+              rating: user.provider.rating,
+              category: user.provider.category, // Adicionei caso queira mostrar a categoria
+            }
+          : null,
+      },
+    })
+  } catch (error) {
+    console.error("Erro no login:", error)
+    return res.status(500).json({ message: "Erro interno no servidor" })
+  }
 })
 
 export default authRoutes
-
