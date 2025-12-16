@@ -26,6 +26,8 @@ model Provider {
   userId      String    @unique
   category    String
   description String?
+  city        String    @default("São Luís - MA")
+  neighborhood String?
   rating      Float     @default(0)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
