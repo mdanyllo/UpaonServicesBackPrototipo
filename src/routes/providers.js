@@ -48,6 +48,7 @@ providersRoutes.get("/", async (req, res) => {
             id: true,
             name: true,
             phone: true,
+            avatarUrl: true,
           },
         },
       },
