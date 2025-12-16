@@ -1,28 +1,26 @@
-// src/middlewares/authMiddleware.js
 import jwt from "jsonwebtoken"
 
 export function ensureAuthenticated(req, res, next) {
-  const authHeader = req.headers.authorization
+  const authToken = req.headers.authorization
 
-  if (!authHeader) {
-    return res.status(401).json({ message: "Token não informado" })
+  if (!authToken) {
+    return res.status(401).json({ message: "Token não informado." })
   }
 
-  // O header vem como "Bearer eyJhbGc..."
-  // A gente separa pelo espaço e pega só o token
-  const [, token] = authHeader.split(" ")
+  // O token geralmente vem como "Bearer <token>"
+  // O split separa pelo espaço e pegamos a segunda parte
+  const [, token] = authToken.split(" ")
 
   try {
+    // Valida o token com a sua senha secreta
     const decoded = jwt.verify(token, process.env.JWT_SECRET)
-    
-    // Injeta o ID do usuário dentro da requisição
-    req.user = {
-      id: decoded.sub,
-      role: decoded.role
-    }
+
+    // AQUI ESTÁ A CORREÇÃO:
+    // Salva o ID do usuário (que está no campo 'sub' do token) na requisição
+    req.userId = decoded.sub
 
     return next()
   } catch (err) {
-    return res.status(401).json({ message: "Token inválido" })
+    return res.status(401).json({ message: "Token inválido." })
   }
 }
