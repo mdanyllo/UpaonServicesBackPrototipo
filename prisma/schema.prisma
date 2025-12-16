@@ -28,7 +28,7 @@ model Provider {
   description String?
   city        String    @default("São Luís - MA")
   neighborhood String?
-  rating      Float     @default(0)
+  rating      Float     @default(5)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   orders      Order[]

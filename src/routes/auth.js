@@ -15,6 +15,8 @@ authRoutes.post("/register", async (req, res) => {
     role,
     category,
     description,
+    city,
+    neighborhood,
   } = req.body
 
   if (!name || !email || !password || !role) {
@@ -48,11 +50,19 @@ authRoutes.post("/register", async (req, res) => {
 
     await prisma.provider.create({
       data: {
-        userId: user.id,
         category,
         description: description || null,
+        city: city || "São Luís - MA",
+        neighborhood: neighborhood || null,
+
+        user: {
+          connect: {
+            id: user.id,
+          },
+        },
       },
     })
+
   }
 
   return res.status(201).json({
@@ -109,6 +119,10 @@ authRoutes.post("/login", async (req, res) => {
       email: user.email,
       phone: user.phone,
       role: user.role,
+
+      city: user.provider?.city || "São Luís - MA",
+      neighborhood: user.provider?.neighborhood || null,
+
       provider: user.provider
         ? {
             id: user.provider.id,
