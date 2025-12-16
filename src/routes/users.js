@@ -50,7 +50,6 @@ userRoutes.patch("/profile", ensureAuthenticated, upload.single("avatar"), async
         provider: {
           upsert: {
             create: {
-              userId: userId,
               category: category || "Outros",
               description: description || "",
               city: "São Luís - MA",
