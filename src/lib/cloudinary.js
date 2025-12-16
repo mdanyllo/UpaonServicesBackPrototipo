@@ -13,6 +13,6 @@ cloudinary.config({
 })
 
 // Configura o Multer para salvar temporariamente na pasta 'uploads'
-const upload = multer({ dest: 'uploads/' })
+const upload = multer({ dest: '/tmp/' })
 
 export { cloudinary, upload }
