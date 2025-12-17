@@ -92,6 +92,9 @@ authRoutes.post("/register", async (req, res) => {
   }
 })
 
+
+
+
 // --- NOVA ROTA: VERIFICAR CÓDIGO ---
 authRoutes.post("/verify", async (req, res) => {
   const { email, code } = req.body;
@@ -123,12 +126,30 @@ authRoutes.post("/verify", async (req, res) => {
       }
     });
 
+        // 1. Gera o token (igualzinho no Login)
+    const token = jwt.sign({ sub: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' })
+
+    // 2. Retorna o token e os dados do usuário
+    return res.status(200).json({ 
+      message: "Email verificado com sucesso!",
+      token, 
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role // IMPORTANTE: Precisamos disso pra saber pra onde redirecionar
+      }
+    })
+
     return res.json({ message: "Conta verificada com sucesso!" });
 
   } catch (error) {
     return res.status(500).json({ message: "Erro ao verificar conta" });
   }
 })
+
+
+
 
 // --- LOGIN (Com verificação se está ativo) ---
 authRoutes.post("/login", async (req, res) => {

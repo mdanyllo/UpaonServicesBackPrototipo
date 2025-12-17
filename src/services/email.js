@@ -16,7 +16,7 @@ const fromEmail = 'Equipe UpaonServices <nao-responda@upaonservices.com.br>';
     const { data, error } = await resend.emails.send({
       from: fromEmail,
       to: email, 
-      subject: 'Seu código de acesso Upaon Services',
+      subject: 'Seu código de acesso',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
           <h2 style="color: #333; text-align: center;">Bem-vindo a UpaonServices!</h2>
