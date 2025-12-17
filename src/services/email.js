@@ -1,29 +1,40 @@
 import { Resend } from 'resend';
 
-// Inicializa o Resend com a chave
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Log para ver se a chave existe (mas esconde os caracteres do meio por segurança)
+const apiKey = process.env.RESEND_API_KEY;
+console.log("🔑 Verificando API Key no início:", apiKey ? `Existe (Começa com ${apiKey.substring(0, 5)}...)` : "NÃO EXISTE/UNDEFINED");
+
+const resend = new Resend(apiKey);
 
 export async function sendVerificationEmail(email, code) {
+  console.log("==============================================");
+  console.log(`🚀 INICIANDO ENVIO DE EMAIL PARA: ${email}`);
+  console.log(`🔑 Chave sendo usada: ${process.env.RESEND_API_KEY ? "Carregada" : "FALTANDO"}`);
+
+  // Tente usar o email de teste do Resend primeiro para isolar problema de domínio
+  // Se funcionar, depois trocamos para o seu domínio
+  const fromEmail = 'onboarding@resend.dev'; 
+  
   try {
-    const data = await resend.emails.send({
-      from: 'Equipe UpaonServices <nao-responda@send.upaonservices.com.br>', 
-      to: email, 
-      
-      subject: 'Seu código de verificação',
-      html: `
-        <div style="font-family: Arial, sans-serif; padding: 20px; text-align: center;">
-          <h2>Bem-vindo a UpaonServices!</h2>
-          <p>Para ativar sua conta, use o código abaixo:</p>
-          <h1 style="color: #4F46E5; letter-spacing: 5px; font-size: 32px;">${code}</h1>
-          <p>Este código expira em 10 minutos.</p>
-          <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;" />
-          <p style="font-size: 12px; color: #888;">Se você não solicitou este código, ignore este email.</p>
-        </div>
-      `
+    const { data, error } = await resend.emails.send({
+      from: fromEmail,
+      to: email, // LEMBRETE: Em Sandbox, isso só funciona se for SEU email de cadastro no Resend
+      subject: 'Teste de Debug Upaon',
+      html: `<p>Seu código é: <strong>${code}</strong></p>`
     });
 
-    console.log(`📧 Email enviado com sucesso! ID: ${data.id}`);
-  } catch (error) {
-    console.error("Erro ao enviar email via Resend:", error);
+    if (error) {
+      console.error("❌ O RESEND RECUSOU O ENVIO:");
+      console.error(JSON.stringify(error, null, 2));
+      return;
+    }
+
+    console.log("✅ O RESEND ACEITOU O PEDIDO!");
+    console.log("ID do Email:", data?.id);
+    console.log("==============================================");
+
+  } catch (err) {
+    console.error("💥 ERRO DE CONEXÃO/CÓDIGO:");
+    console.error(err);
   }
 }
