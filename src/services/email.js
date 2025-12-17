@@ -2,7 +2,7 @@ import nodemailer from 'nodemailer';
 
 // Configure com seu email real ou use o Mailtrap para testes
 const transporter = nodemailer.createTransport({
-  service: 'smtp.gmail.com',
+  host: "smtp.gmail.com",
   port: 465,
   secure: true,
   auth: {
