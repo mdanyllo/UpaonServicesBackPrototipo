@@ -141,8 +141,6 @@ authRoutes.post("/verify", async (req, res) => {
       }
     })
 
-    return res.json({ message: "Conta verificada com sucesso!" });
-
   } catch (error) {
     return res.status(500).json({ message: "Erro ao verificar conta" });
   }
