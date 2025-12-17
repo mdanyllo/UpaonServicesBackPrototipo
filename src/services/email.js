@@ -2,14 +2,18 @@ import nodemailer from 'nodemailer';
 
 // Configure com seu email real ou use o Mailtrap para testes
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
+host: "smtp.gmail.com",
+  port: 587,            // MUDANÇA: Usar porta 587
+  secure: false,        // MUDANÇA: false para porta 587 (usa STARTTLS)
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS  
+    pass: process.env.EMAIL_PASS
   },
-  connectionTimeout: 10000,
+  tls: {
+    ciphers: "SSLv3",   // Ajuda na compatibilidade
+    rejectUnauthorized: false // Importante: Aceita certificados do servidor mesmo se houver conflito
+  },
+  connectionTimeout: 10000, 
 });
 
 export async function sendVerificationEmail(email, code) {
