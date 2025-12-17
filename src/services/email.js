@@ -10,7 +10,7 @@ export async function sendVerificationEmail(email, code) {
   console.log(`🚀 INICIANDO ENVIO DE EMAIL PARA: ${email}`);
   console.log(`🔑 Chave sendo usada: ${process.env.RESEND_API_KEY ? "Carregada" : "FALTANDO"}`);
   
-const fromEmail = 'Equipe UpaonServices <nao-responda@send.upaonservices.com.br>'; 
+const fromEmail = 'Equipe UpaonServices <nao-responda@upaonservices.com.br>'; 
   
   try {
     const { data, error } = await resend.emails.send({
