@@ -3,7 +3,7 @@ import nodemailer from 'nodemailer';
 // Configure com seu email real ou use o Mailtrap para testes
 const transporter = nodemailer.createTransport({
   service: 'smtp.gmail.com',
-  port: 456,
+  port: 465,
   secure: true,
   auth: {
     user: process.env.EMAIL_USER,
