@@ -2,11 +2,14 @@ import nodemailer from 'nodemailer';
 
 // Configure com seu email real ou use o Mailtrap para testes
 const transporter = nodemailer.createTransport({
-  service: 'gmail', // Ou outro provedor
+  service: 'smtp.gmail.com',
+  port: 456,
+  secure: true,
   auth: {
-    user: process.env.EMAIL_USER, // Seu email (ex: upaonservices@gmail.com)
-    pass: process.env.EMAIL_PASS  // Senha de app do Gmail (Não é a senha normal!)
-  }
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS  
+  },
+  connectionTimeout: 10000,
 });
 
 export async function sendVerificationEmail(email, code) {
