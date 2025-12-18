@@ -9,88 +9,71 @@ datasource db {
 }
 
 model User {
-  id        String    @id @default(uuid())
-  name      String
-  email     String    @unique
-  password  String
-  phone     String
-  city        String    @default("São Luís - MA")
-  neighborhood String?
-  avatarUrl String?
-  role      UserRole  @default(CLIENT)
+  id               String    @id @default(uuid())
+  name             String
+  email            String    @unique
+  password         String
+  phone            String
+  city             String    @default("São Luís - MA")
+  neighborhood     String?
+  avatarUrl        String?
+  role             UserRole  @default(CLIENT)
 
-  isEmailVerified Boolean @default(false)
-  isPhoneVerified Boolean @default(false)
+  isEmailVerified  Boolean   @default(false)
+  isPhoneVerified  Boolean   @default(false)
+  verificationCode String?
+  codeExpiresAt    DateTime?
   
-  verificationCode String? // O código de 6 dígitos
-  codeExpiresAt    DateTime? // Validade do código
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  provider         Provider? 
+  contactLogs      ContactLog[] 
   
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  orders    Order[]
-  provider  Provider?
+  reviewsWritten   Review[] 
 }
 
 model Provider {
-  id          String    @id @default(uuid())
-  userId      String    @unique
+  id          String   @id @default(uuid())
+  userId      String   @unique
   category    String
   description String?
-  rating      Float     @default(5.0)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  orders      Order[]
-  user        User      @relation(fields: [userId], references: [id])
-  services    Service[]
-
-  @@index([category])
-}
-
-model Service {
-  id          String   @id @default(uuid())
-  title       String
-  description String
-  price       Float?
-  providerId  String
+  
+  rating      Float    @default(5.0) 
+  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  orders      Order[]
-  provider    Provider @relation(fields: [providerId], references: [id])
-}
 
-model Order {
-  id         String      @id @default(uuid())
-  clientId   String
-  providerId String
-  serviceId  String
-  status     OrderStatus @default(PENDING)
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-  client     User        @relation(fields: [clientId], references: [id])
-  provider   Provider    @relation(fields: [providerId], references: [id])
-  service    Service     @relation(fields: [serviceId], references: [id])
-  review     Review?
+  user        User     @relation(fields: [userId], references: [id])
+  contactLogs ContactLog[]
+
+  reviewsReceived Review[] 
 }
 
 model Review {
   id        String   @id @default(uuid())
-  orderId   String   @unique
-  rating    Int
-  comment   String?
+  rating    Int      // 1 a 5
+  comment   String?  // Opcional
   createdAt DateTime @default(now())
-  order     Order    @relation(fields: [orderId], references: [id])
+
+  providerId String
+  provider   Provider @relation(fields: [providerId], references: [id])
+
+  authorId   String
+  author     User     @relation(fields: [authorId], references: [id])
+}
+
+model ContactLog {
+  id         String   @id @default(uuid())
+  createdAt  DateTime @default(now())
+  providerId String
+  provider   Provider @relation(fields: [providerId], references: [id])
+  clientId   String
+  client     User     @relation(fields: [clientId], references: [id])
 }
 
 enum UserRole {
   CLIENT
   PROVIDER
   BOTH
-}
-
-enum OrderStatus {
-  PENDING
-  ACCEPTED
-  IN_PROGRESS
-  COMPLETED
-  CANCELED
 }

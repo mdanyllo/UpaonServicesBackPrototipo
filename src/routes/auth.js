@@ -6,6 +6,9 @@ import { sendVerificationEmail } from "../services/email.js"
 
 const authRoutes = Router()
 
+
+
+// ROTA CADASTRO
 authRoutes.post("/register", async (req, res) => {
   try {
     const {
@@ -85,9 +88,9 @@ authRoutes.post("/register", async (req, res) => {
   }
 })
 
-// ======================================================
-// ROTA DE VERIFICAÇÃO DE EMAIL
-// ======================================================
+
+
+// VERIFICAR EMAIL
 authRoutes.post("/verify", async (req, res) => {
   const { email, code } = req.body;
 
@@ -138,9 +141,9 @@ authRoutes.post("/verify", async (req, res) => {
   }
 })
 
-// ======================================================
-// ROTA DE LOGIN (ATUALIZADA PARA LER ENDEREÇO DO USER)
-// ======================================================
+
+
+// ROTA DE LOGIN
 authRoutes.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body

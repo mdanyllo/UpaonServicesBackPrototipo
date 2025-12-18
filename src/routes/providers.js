@@ -105,4 +105,39 @@ providersRoutes.get("/", async (req, res) => {
   }
 })
 
+
+// ROTA GRAVAR CLIQUE ZAP
+providersRoutes.post("/:id/contact", async (req, res) => {
+  const { id } = req.params 
+  const { clientId } = req.body 
+
+  try {
+    await prisma.contactLog.create({
+      data: {
+        providerId: id,
+        clientId: clientId
+      }
+    })
+    return res.status(201).json({ message: "Clique registrado" })
+  } catch (error) {
+    return res.status(500).json({ message: "Erro ao registrar" })
+  }
+})
+
+// 2. ROTA DE LER
+providersRoutes.get("/:id/stats", async (req, res) => {
+  const { id } = req.params
+
+  try {
+    // Conta quantos registros tem no banco para esse prestador
+    const contactCount = await prisma.contactLog.count({
+      where: { providerId: id }
+    })
+    
+    return res.json({ contacts: contactCount })
+  } catch (error) {
+    return res.status(500).json({ contacts: 0 })
+  }
+})
+
 export default providersRoutes
