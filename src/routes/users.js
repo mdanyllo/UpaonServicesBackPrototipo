@@ -82,4 +82,32 @@ userRoutes.patch("/profile", ensureAuthenticated, upload.single("avatar"), async
   }
 })
 
+// ROTA PARA PEGAR O HISTÓRICO DO CLIENTE
+usersRoutes.get("/:id/history", async (req, res) => {
+  const { id } = req.params
+
+  try {
+    // Busca logs onde clientId é igual ao id do usuário
+    const history = await prisma.contactLog.findMany({
+      where: { clientId: id },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        provider: {
+          include: {
+            user: {
+              select: { name: true, avatarUrl: true, phone: true, city: true }
+            }
+          }
+        }
+      }
+    })
+    
+    return res.json({ count: history.length, logs: history })
+
+  } catch (error) {
+    console.error(error)
+    return res.status(500).json({ count: 0, logs: [] })
+  }
+})
+
 export default userRoutes
