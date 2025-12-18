@@ -38,7 +38,6 @@ app.use(
 
 // Permitir preflight para todas as rotas
 app.options("*", cors())
-
 app.use(express.json())
 
 // Rotas

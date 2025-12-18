@@ -129,14 +129,31 @@ providersRoutes.get("/:id/stats", async (req, res) => {
   const { id } = req.params
 
   try {
-    // Conta quantos registros tem no banco para esse prestador
-    const contactCount = await prisma.contactLog.count({
-      where: { providerId: id }
+    // Busca os logs e INCLUI os dados do cliente (nome, avatar, telefone)
+    const logs = await prisma.contactLog.findMany({
+      where: { providerId: id },
+      orderBy: { createdAt: 'desc' }, // Mais recentes primeiro
+      include: {
+        client: {
+          select: {
+            name: true,
+            avatarUrl: true,
+            phone: true,
+            email: true
+          }
+        }
+      }
     })
     
-    return res.json({ contacts: contactCount })
+    // Retorna a contagem e a lista
+    return res.json({ 
+      contacts: logs.length, 
+      logs: logs 
+    })
+
   } catch (error) {
-    return res.status(500).json({ contacts: 0 })
+    console.error(error)
+    return res.status(500).json({ contacts: 0, logs: [] })
   }
 })
 
