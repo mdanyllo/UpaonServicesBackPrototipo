@@ -49,12 +49,14 @@ userRoutes.patch("/profile", ensureAuthenticated, upload.single("avatar"), async
       where: { id: userId },
       data: {
         avatarUrl: avatarUrl || undefined,
+        city: "São Luís - MA",
+        neighborhood: neighborhood || undefined,
+        phone: phone || undefined,
         provider: {
           upsert: {
             create: {
               category: category || "Outros",
               description: description || "",
-              city: "São Luís - MA",
             },
             update: {
               category: category || undefined,
@@ -75,7 +77,9 @@ userRoutes.patch("/profile", ensureAuthenticated, upload.single("avatar"), async
         role: updatedUser.role,
         avatarUrl: updatedUser.avatarUrl,
         provider: updatedUser.provider,
-        city: updatedUser.provider?.city
+        city: updatedUser.city,
+        neighborhood: updatedUser.neighborhood,
+        phone: updatedUser.phone
     })
 
   } catch (error) {
