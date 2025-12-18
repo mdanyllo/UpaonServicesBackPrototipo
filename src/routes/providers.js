@@ -1,5 +1,5 @@
 import { Router } from "express"
-import { prisma } from "../lib/prisma.js" // Verifique se o caminho está certo
+import { prisma } from "../prisma.js"
 
 const providersRoutes = Router()
 

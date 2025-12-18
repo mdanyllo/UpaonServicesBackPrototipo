@@ -1,14 +1,11 @@
 import { Router } from "express"
-import { prisma } from "../lib/prisma.js" // Confirme se o caminho do seu prisma está certo
+import { prisma } from "../prisma.js"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
-import { sendVerificationEmail } from "../services/emailService.js" // Confirme o nome do arquivo
+import { sendVerificationEmail } from "../services/emailService.js"
 
 const authRoutes = Router()
 
-// ======================================================
-// ROTA DE CADASTRO (ATUALIZADA PARA O NOVO SCHEMA)
-// ======================================================
 authRoutes.post("/register", async (req, res) => {
   try {
     const {
