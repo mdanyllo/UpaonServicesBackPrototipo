@@ -1,12 +1,14 @@
 import { Router } from "express"
-import { prisma } from "../prisma.js"
+import { prisma } from "../lib/prisma.js" // Confirme se o caminho do seu prisma está certo
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
-import { sendVerificationEmail } from "../services/email.js"
+import { sendVerificationEmail } from "../services/emailService.js" // Confirme o nome do arquivo
 
 const authRoutes = Router()
 
-// --- ROTA DE CADASTRO (Agora com envio de código) ---
+// ======================================================
+// ROTA DE CADASTRO (ATUALIZADA PARA O NOVO SCHEMA)
+// ======================================================
 authRoutes.post("/register", async (req, res) => {
   try {
     const {
@@ -35,13 +37,13 @@ authRoutes.post("/register", async (req, res) => {
       return res.status(400).json({ message: "Email já cadastrado" })
     }
 
-    // 1. GERA O CÓDIGO DE VERIFICAÇÃO (NOVO)
+    // 1. Gera código de verificação
     const code = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // Expira em 10 min
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
 
     const hashedPassword = await bcrypt.hash(password, 10)
 
-    // 2. CRIA O USUÁRIO COM OS CAMPOS DE VERIFICAÇÃO (ATUALIZADO)
+    // 2. CRIAÇÃO ATÔMICA (User + Endereço + Provider se necessário)
     const user = await prisma.user.create({
       data: {
         name,
@@ -49,53 +51,46 @@ authRoutes.post("/register", async (req, res) => {
         password: hashedPassword,
         phone,
         role,
-        isEmailVerified: false, // Começa falso
-        verificationCode: code, // Salva o código
-        codeExpiresAt: expiresAt // Salva validade
+        
+        // --- MUDANÇA: O ENDEREÇO AGORA É AQUI NO USER ---
+        city: city || "São Luís - MA",
+        neighborhood: neighborhood || "",
+        
+        // Dados de Verificação
+        isEmailVerified: false,
+        verificationCode: code,
+        codeExpiresAt: expiresAt,
+
+        // --- MUDANÇA: CRIA O PRESTADOR JUNTO (SE FOR UM) ---
+        provider: role === "PROVIDER" ? {
+          create: {
+            category: category || "Outros",
+            description: description || null,
+            rating: 5.0,
+            // OBS: Não tem mais city/neighborhood aqui dentro!
+          }
+        } : undefined
       },
     })
 
-    // Lógica do Prestador (Mantida igual ao seu código original)
-    if (role === "PROVIDER") {
-      if (!category) {
-        return res.status(400).json({ message: "Categoria obrigatória" })
-      }
-
-      await prisma.provider.create({
-        data: {
-          category,
-          description: description || null,
-          city: city || "São Luís - MA",
-          neighborhood: neighborhood || null,
-          user: {
-            connect: {
-              id: user.id,
-            },
-          },
-        },
-      })
-    }
-
-    // 3. ENVIA O EMAIL (NOVO)
+    // 3. Envia o email
     await sendVerificationEmail(email, code);
 
-    // Retorna mensagem pedindo verificação
     return res.status(201).json({
-      message: "Usuário criado com sucesso. Verifique seu email para ativar a conta.",
+      message: "Usuário criado! Verifique seu email.",
       userId: user.id,
       email: user.email
     })
 
   } catch (error) {
-    console.error(error)
+    console.error("Erro no registro:", error)
     return res.status(500).json({ message: "Erro ao criar usuário" })
   }
 })
 
-
-
-
-// --- NOVA ROTA: VERIFICAR CÓDIGO ---
+// ======================================================
+// ROTA DE VERIFICAÇÃO DE EMAIL
+// ======================================================
 authRoutes.post("/verify", async (req, res) => {
   const { email, code } = req.body;
 
@@ -104,20 +99,18 @@ authRoutes.post("/verify", async (req, res) => {
 
     if (!user) return res.status(404).json({ message: "Usuário não encontrado" });
 
-    // Se já verificado, retorna ok
     if (user.isEmailVerified) return res.json({ message: "Conta já verificada!" });
 
-    // Verifica código e validade
     if (user.verificationCode !== code) {
       return res.status(400).json({ message: "Código inválido" });
     }
 
     if (new Date() > user.codeExpiresAt) {
-      return res.status(400).json({ message: "Código expirado. Solicite um novo." });
+      return res.status(400).json({ message: "Código expirado." });
     }
 
-    // Sucesso: Ativa a conta
-    await prisma.user.update({
+    // Ativa a conta
+    const userUpdated = await prisma.user.update({
       where: { email },
       data: {
         isEmailVerified: true,
@@ -126,30 +119,29 @@ authRoutes.post("/verify", async (req, res) => {
       }
     });
 
-        // 1. Gera o token (igualzinho no Login)
+    // Gera o Token para Auto-Login
     const token = jwt.sign({ sub: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' })
 
-    // 2. Retorna o token e os dados do usuário
     return res.status(200).json({ 
       message: "Email verificado com sucesso!",
       token, 
       user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role // IMPORTANTE: Precisamos disso pra saber pra onde redirecionar
+        id: userUpdated.id,
+        name: userUpdated.name,
+        email: userUpdated.email,
+        role: userUpdated.role
       }
     })
 
   } catch (error) {
+    console.error(error);
     return res.status(500).json({ message: "Erro ao verificar conta" });
   }
 })
 
-
-
-
-// --- LOGIN (Com verificação se está ativo) ---
+// ======================================================
+// ROTA DE LOGIN (ATUALIZADA PARA LER ENDEREÇO DO USER)
+// ======================================================
 authRoutes.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body
@@ -161,7 +153,7 @@ authRoutes.post("/login", async (req, res) => {
     const user = await prisma.user.findUnique({
       where: { email },
       include: {
-        provider: true,
+        provider: true, // Traz os dados extras se for prestador
       },
     })
 
@@ -169,11 +161,10 @@ authRoutes.post("/login", async (req, res) => {
       return res.status(401).json({ message: "Email ou senha incorretos" })
     }
 
-    // TRAVA DE SEGURANÇA (NOVO): Impede login se não verificou
-    // Se quiser permitir login sem verificar, remova este bloco IF
+    // Trava de verificação
     if (!user.isEmailVerified) {
        return res.status(403).json({ 
-         message: "Conta não verificada. Verifique seu email.",
+         message: "Conta não verificada.",
          needsVerification: true 
        })
     }
@@ -190,9 +181,7 @@ authRoutes.post("/login", async (req, res) => {
         role: user.role,
       },
       process.env.JWT_SECRET,
-      {
-        expiresIn: "7d",
-      }
+      { expiresIn: "7d" }
     )
 
     return res.json({
@@ -204,8 +193,11 @@ authRoutes.post("/login", async (req, res) => {
         phone: user.phone,
         role: user.role,
         avatarUrl: user.avatarUrl,
-        city: user.provider?.city || "São Luís - MA", 
-        neighborhood: user.provider?.neighborhood || null,
+        
+        // --- MUDANÇA: LÊ A CIDADE DO PRÓPRIO USER ---
+        city: user.city, 
+        neighborhood: user.neighborhood,
+        
         provider: user.provider
           ? {
               id: user.provider.id,

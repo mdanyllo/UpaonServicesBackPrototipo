@@ -14,6 +14,8 @@ model User {
   email     String    @unique
   password  String
   phone     String
+  city        String    @default("São Luís - MA")
+  neighborhood String?
   avatarUrl String?
   role      UserRole  @default(CLIENT)
 
@@ -34,8 +36,6 @@ model Provider {
   userId      String    @unique
   category    String
   description String?
-  city        String    @default("São Luís - MA")
-  neighborhood String?
   rating      Float     @default(5.0)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
