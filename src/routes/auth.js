@@ -126,7 +126,9 @@ authRoutes.post("/verify", async (req, res) => {
         id: userUpdated.id,
         name: userUpdated.name,
         email: userUpdated.email,
-        role: userUpdated.role
+        role: userUpdated.role,
+        city: userUpdated.city, 
+        neighborhood: userUpdated.neighborhood,
       }
     })
 
