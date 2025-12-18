@@ -2,7 +2,7 @@ import { Router } from "express"
 import { prisma } from "../prisma.js"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
-import { sendVerificationEmail } from "../services/emailService.js"
+import { sendVerificationEmail } from "../services/email.js"
 
 const authRoutes = Router()
 
