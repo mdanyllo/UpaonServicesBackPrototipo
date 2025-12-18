@@ -4,8 +4,10 @@ import { cloudinary, upload } from "../lib/cloudinary.js"
 import { ensureAuthenticated } from "../middlewares/auth.js"
 import fs from "fs"
 
-const userRoutes = Router()
+// 1. AQUI VOCÊ DEFINIU COMO 'userRoutes'
+const userRoutes = Router() 
 
+// 2. ENTÃO AQUI TEM QUE SER 'userRoutes' TAMBÉM (estava 'routes')
 userRoutes.get("/", async (req, res) => {
   const users = await prisma.user.findMany({
     select: {
@@ -21,6 +23,7 @@ userRoutes.get("/", async (req, res) => {
   return res.json(users)
 })
 
+// 3. AQUI TAMBÉM (estava 'routes')
 userRoutes.patch("/profile", ensureAuthenticated, upload.single("avatar"), async (req, res) => {
   try {
     const userId = req.userId
@@ -29,7 +32,6 @@ userRoutes.patch("/profile", ensureAuthenticated, upload.single("avatar"), async
     let avatarUrl = null
 
     if (req.file) {
-      // UPLOAD COM TRAVA DE SEGURANÇA (50kb max strategy)
       const uploadResult = await cloudinary.uploader.upload(req.file.path, {
         folder: "upaon_avatars",
         transformation: [
@@ -82,12 +84,11 @@ userRoutes.patch("/profile", ensureAuthenticated, upload.single("avatar"), async
   }
 })
 
-// ROTA PARA PEGAR O HISTÓRICO DO CLIENTE
-routes.get("/:id/history", async (req, res) => {
+// 4. E AQUI NA ROTA NOVA TAMBÉM TEM QUE SER 'userRoutes'
+userRoutes.get("/:id/history", async (req, res) => {
   const { id } = req.params
 
   try {
-    // Busca logs onde clientId é igual ao id do usuário
     const history = await prisma.contactLog.findMany({
       where: { clientId: id },
       orderBy: { createdAt: 'desc' },
@@ -110,4 +111,5 @@ routes.get("/:id/history", async (req, res) => {
   }
 })
 
+// 5. EXPORTA O MESMO NOME
 export default userRoutes
