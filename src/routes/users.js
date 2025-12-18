@@ -83,7 +83,7 @@ userRoutes.patch("/profile", ensureAuthenticated, upload.single("avatar"), async
 })
 
 // ROTA PARA PEGAR O HISTÓRICO DO CLIENTE
-usersRoutes.get("/:id/history", async (req, res) => {
+routes.get("/:id/history", async (req, res) => {
   const { id } = req.params
 
   try {
