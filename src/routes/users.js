@@ -4,10 +4,8 @@ import { cloudinary, upload } from "../lib/cloudinary.js"
 import { ensureAuthenticated } from "../middlewares/auth.js"
 import fs from "fs"
 
-// 1. AQUI VOCÊ DEFINIU COMO 'userRoutes'
 const userRoutes = Router() 
 
-// 2. ENTÃO AQUI TEM QUE SER 'userRoutes' TAMBÉM (estava 'routes')
 userRoutes.get("/", async (req, res) => {
   const users = await prisma.user.findMany({
     select: {
@@ -23,11 +21,14 @@ userRoutes.get("/", async (req, res) => {
   return res.json(users)
 })
 
-// 3. AQUI TAMBÉM (estava 'routes')
 userRoutes.patch("/profile", ensureAuthenticated, upload.single("avatar"), async (req, res) => {
   try {
     const userId = req.userId
-    const { description, category } = req.body
+    
+    // --- CORREÇÃO AQUI 👇 ---
+    // Você precisa receber 'phone', 'city' e 'neighborhood' do front-end
+    const { description, category, phone, city, neighborhood } = req.body
+    // ------------------------
 
     let avatarUrl = null
 
@@ -49,9 +50,12 @@ userRoutes.patch("/profile", ensureAuthenticated, upload.single("avatar"), async
       where: { id: userId },
       data: {
         avatarUrl: avatarUrl || undefined,
-        city: "São Luís - MA",
-        neighborhood: neighborhood || undefined,
+        
+        // Agora essas variáveis existem!
         phone: phone || undefined,
+        city: city || undefined, 
+        neighborhood: neighborhood || undefined,
+
         provider: {
           upsert: {
             create: {
@@ -77,6 +81,8 @@ userRoutes.patch("/profile", ensureAuthenticated, upload.single("avatar"), async
         role: updatedUser.role,
         avatarUrl: updatedUser.avatarUrl,
         provider: updatedUser.provider,
+        
+        // Retorna os dados novos
         city: updatedUser.city,
         neighborhood: updatedUser.neighborhood,
         phone: updatedUser.phone
@@ -88,7 +94,6 @@ userRoutes.patch("/profile", ensureAuthenticated, upload.single("avatar"), async
   }
 })
 
-// 4. E AQUI NA ROTA NOVA TAMBÉM TEM QUE SER 'userRoutes'
 userRoutes.get("/:id/history", async (req, res) => {
   const { id } = req.params
 
@@ -115,5 +120,4 @@ userRoutes.get("/:id/history", async (req, res) => {
   }
 })
 
-// 5. EXPORTA O MESMO NOME
 export default userRoutes
