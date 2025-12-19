@@ -51,9 +51,6 @@ userRoutes.get("/:id", ensureAuthenticated, async (req, res) => {
   }
 })
 
-userRoutes.patch("/profile", ensureAuthenticated, async (req, res) => {
-})
-
 
 
 // Atualizar perfil de usuário
