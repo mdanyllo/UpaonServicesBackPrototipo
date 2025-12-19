@@ -25,13 +25,12 @@ userRoutes.patch("/profile", ensureAuthenticated, upload.single("avatar"), async
   try {
     const userId = req.userId
     
-    // --- CORREÇÃO AQUI 👇 ---
-    // Você precisa receber 'phone', 'city' e 'neighborhood' do front-end
+    // Pegamos os dados
     const { description, category, phone, city, neighborhood } = req.body
-    // ------------------------
 
     let avatarUrl = null
 
+    // Lógica da Imagem (continua igual)
     if (req.file) {
       const uploadResult = await cloudinary.uploader.upload(req.file.path, {
         folder: "upaon_avatars",
@@ -41,33 +40,38 @@ userRoutes.patch("/profile", ensureAuthenticated, upload.single("avatar"), async
         quality: "auto:good",
         fetch_format: "auto", 
       })
-
       avatarUrl = uploadResult.secure_url
       fs.unlinkSync(req.file.path)
     }
+
+    // --- A CORREÇÃO MÁGICA ESTÁ AQUI 👇 ---
+    
+    // Só vamos mexer no Provider se o usuário enviou uma CATEGORIA (ou seja, é Prestador)
+    const providerUpdate = category ? {
+      upsert: {
+        create: {
+          category: category,
+          description: description || "",
+        },
+        update: {
+          category: category,
+          description: description || undefined,
+        },
+      },
+    } : undefined // Se não enviou categoria, passa undefined (o Prisma ignora e não cria nada)
 
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
         avatarUrl: avatarUrl || undefined,
         
-        // Agora essas variáveis existem!
+        // Dados do Usuário (Cliente e Prestador têm)
         phone: phone || undefined,
         city: city || undefined, 
         neighborhood: neighborhood || undefined,
 
-        provider: {
-          upsert: {
-            create: {
-              category: category || "Outros",
-              description: description || "",
-            },
-            update: {
-              category: category || undefined,
-              description: description || undefined,
-            },
-          },
-        },
+        // Dados do Prestador (Só atualiza se for prestador)
+        provider: providerUpdate,
       },
       include: {
         provider: true, 
@@ -81,8 +85,6 @@ userRoutes.patch("/profile", ensureAuthenticated, upload.single("avatar"), async
         role: updatedUser.role,
         avatarUrl: updatedUser.avatarUrl,
         provider: updatedUser.provider,
-        
-        // Retorna os dados novos
         city: updatedUser.city,
         neighborhood: updatedUser.neighborhood,
         phone: updatedUser.phone
