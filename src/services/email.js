@@ -39,3 +39,32 @@ const fromEmail = 'Equipe UpaonServices <nao-responda@upaonservices.com.br>';
     console.error(err);
   }
 }
+
+
+
+//Função de Recuperação de Senha (NOVA - ADICIONE ISTO)
+export async function sendPasswordResetEmail(email, code) {
+  try {
+    await resend.emails.send({
+      from: 'Upaon Services <onboarding@resend.dev>',
+      to: email,
+      subject: 'Recuperação de Senha - Upaon Services',
+      html: `
+        <div style="font-family: Arial, sans-serif; color: #333;">
+          <h1>Recuperação de Senha</h1>
+          <p>Você solicitou a redefinição de sua senha.</p>
+          <p>Use o código abaixo para criar uma nova senha:</p>
+          <div style="background: #fff0f0; border: 1px solid #ffcccc; padding: 20px; border-radius: 10px; text-align: center; font-size: 24px; letter-spacing: 5px; font-weight: bold; color: #cc0000;">
+            ${code}
+          </div>
+          <p>Este código expira em 10 minutos.</p>
+          <p>Se não foi você que pediu, apenas ignore este e-mail.</p>
+        </div>
+      `
+    });
+    console.log(`Email de recuperação enviado para ${email}`);
+  } catch (error) {
+    console.error("Erro ao enviar email de recuperação:", error);
+    throw new Error("Falha no envio de email");
+  }
+}

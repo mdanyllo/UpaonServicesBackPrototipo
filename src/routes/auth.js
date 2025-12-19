@@ -2,7 +2,6 @@ import { Router } from "express"
 import { prisma } from "../prisma.js"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
-// ADICIONEI O sendPasswordResetEmail AQUI NA IMPORTAÇÃO 👇
 import { sendVerificationEmail, sendPasswordResetEmail } from "../services/email.js"
 
 const authRoutes = Router()
