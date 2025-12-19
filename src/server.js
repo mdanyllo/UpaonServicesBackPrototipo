@@ -26,6 +26,7 @@ app.use(
         "https://upaonservices.vercel.app",
         "https://upaonservices.com.br",
         "https://www.upaonservices.com.br",
+        "https://upaonservices-dztrwykxe-mdanyllos-projects.vercel.app",
       ]
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true)
