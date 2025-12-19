@@ -2,13 +2,14 @@ import { Router } from "express"
 import { prisma } from "../prisma.js"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
-import { sendVerificationEmail } from "../services/email.js"
+// ADICIONEI O sendPasswordResetEmail AQUI NA IMPORTAÇÃO 👇
+import { sendVerificationEmail, sendPasswordResetEmail } from "../services/email.js"
 
 const authRoutes = Router()
 
-
-
+// ======================================================
 // ROTA CADASTRO
+// ======================================================
 authRoutes.post("/register", async (req, res) => {
   try {
     const {
@@ -52,7 +53,6 @@ authRoutes.post("/register", async (req, res) => {
         phone,
         role,
         
-        // --- MUDANÇA: O ENDEREÇO AGORA É AQUI NO USER ---
         city: city || "São Luís - MA",
         neighborhood: neighborhood || "",
         
@@ -61,13 +61,11 @@ authRoutes.post("/register", async (req, res) => {
         verificationCode: code,
         codeExpiresAt: expiresAt,
 
-        // --- MUDANÇA: CRIA O PRESTADOR JUNTO (SE FOR UM) ---
         provider: role === "PROVIDER" ? {
           create: {
             category: category || "Outros",
             description: description || null,
             rating: 5.0,
-            // OBS: Não tem mais city/neighborhood aqui dentro!
           }
         } : undefined
       },
@@ -88,9 +86,9 @@ authRoutes.post("/register", async (req, res) => {
   }
 })
 
-
-
+// ======================================================
 // ROTA VERIFICAR EMAIL
+// ======================================================
 authRoutes.post("/verify", async (req, res) => {
   const { email, code } = req.body;
 
@@ -141,9 +139,9 @@ authRoutes.post("/verify", async (req, res) => {
   }
 })
 
-
-
+// ======================================================
 // ROTA REENVIAR CÓDIGO
+// ======================================================
 authRoutes.post("/resend-code", async (req, res) => {
   const { email } = req.body
 
@@ -182,9 +180,91 @@ authRoutes.post("/resend-code", async (req, res) => {
   }
 })
 
+// ======================================================
+// NOVA ROTA: ESQUECI A SENHA (Gera código) 
+// ======================================================
+authRoutes.post("/forgot-password", async (req, res) => {
+  const { email } = req.body
 
+  try {
+    const user = await prisma.user.findUnique({ where: { email } })
 
+    if (!user) {
+      return res.status(404).json({ message: "Email não encontrado no sistema." })
+    }
+
+    // Gera código novo
+    const code = Math.floor(100000 + Math.random() * 900000).toString()
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // 10 min
+
+    // Salva no banco (reaproveitando os campos de verificação)
+    await prisma.user.update({
+      where: { email },
+      data: {
+        verificationCode: code,
+        codeExpiresAt: expiresAt
+      }
+    })
+
+    // Envia o email de recuperação
+    await sendPasswordResetEmail(email, code)
+
+    return res.json({ message: "Código de recuperação enviado para seu email." })
+
+  } catch (error) {
+    console.error("Erro no forgot-password:", error)
+    return res.status(500).json({ message: "Erro ao processar solicitação." })
+  }
+})
+
+// ======================================================
+// NOVA ROTA: REDEFINIR A SENHA (Salva nova senha) 
+// ======================================================
+authRoutes.post("/reset-password", async (req, res) => {
+  const { email, code, newPassword } = req.body
+
+  if (!email || !code || !newPassword) {
+    return res.status(400).json({ message: "Todos os campos são obrigatórios." })
+  }
+
+  try {
+    const user = await prisma.user.findUnique({ where: { email } })
+
+    if (!user) return res.status(404).json({ message: "Usuário não encontrado." })
+
+    // Validações do Código
+    if (user.verificationCode !== code) {
+      return res.status(400).json({ message: "Código inválido." })
+    }
+
+    if (!user.codeExpiresAt || new Date() > user.codeExpiresAt) {
+      return res.status(400).json({ message: "Código expirado. Solicite outro." })
+    }
+
+    // Criptografa a nova senha
+    const hashedPassword = await bcrypt.hash(newPassword, 10)
+
+    // Atualiza a senha e limpa o código
+    await prisma.user.update({
+      where: { email },
+      data: {
+        password: hashedPassword,
+        verificationCode: null,
+        codeExpiresAt: null
+      }
+    })
+
+    return res.json({ message: "Senha alterada com sucesso! Faça login." })
+
+  } catch (error) {
+    console.error("Erro no reset-password:", error)
+    return res.status(500).json({ message: "Erro ao redefinir senha." })
+  }
+})
+
+// ======================================================
 // ROTA DE LOGIN
+// ======================================================
 authRoutes.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body
@@ -236,11 +316,8 @@ authRoutes.post("/login", async (req, res) => {
         phone: user.phone,
         role: user.role,
         avatarUrl: user.avatarUrl,
-        
-        // --- MUDANÇA: LÊ A CIDADE DO PRÓPRIO USER ---
         city: user.city, 
         neighborhood: user.neighborhood,
-        
         provider: user.provider
           ? {
               id: user.provider.id,
