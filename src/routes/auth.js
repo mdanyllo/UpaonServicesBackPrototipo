@@ -90,7 +90,7 @@ authRoutes.post("/register", async (req, res) => {
 
 
 
-// VERIFICAR EMAIL
+// ROTA VERIFICAR EMAIL
 authRoutes.post("/verify", async (req, res) => {
   const { email, code } = req.body;
 
@@ -138,6 +138,47 @@ authRoutes.post("/verify", async (req, res) => {
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Erro ao verificar conta" });
+  }
+})
+
+
+
+// ROTA REENVIAR CÓDIGO
+authRoutes.post("/resend-code", async (req, res) => {
+  const { email } = req.body
+
+  try {
+    const user = await prisma.user.findUnique({ where: { email } })
+
+    if (!user) {
+      return res.status(404).json({ message: "Usuário não encontrado" })
+    }
+
+    if (user.isEmailVerified) {
+      return res.status(400).json({ message: "Esta conta já foi verificada. Faça login." })
+    }
+
+    // 1. Gera novo código e nova validade
+    const code = Math.floor(100000 + Math.random() * 900000).toString()
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // +10 min
+
+    // 2. Atualiza no banco
+    await prisma.user.update({
+      where: { email },
+      data: {
+        verificationCode: code,
+        codeExpiresAt: expiresAt
+      }
+    })
+
+    // 3. Reenvia o email
+    await sendVerificationEmail(email, code)
+
+    return res.json({ message: "Novo código enviado! Verifique seu email." })
+
+  } catch (error) {
+    console.error("Erro ao reenviar código:", error)
+    return res.status(500).json({ message: "Erro ao reenviar código." })
   }
 })
 

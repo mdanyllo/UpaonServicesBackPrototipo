@@ -6,6 +6,7 @@ import fs from "fs"
 
 const userRoutes = Router() 
 
+// 1. LISTAR USUÁRIOS
 userRoutes.get("/", async (req, res) => {
   const users = await prisma.user.findMany({
     select: {
@@ -21,16 +22,17 @@ userRoutes.get("/", async (req, res) => {
   return res.json(users)
 })
 
+// 2. ATUALIZAR PERFIL (BLINDADA)
 userRoutes.patch("/profile", ensureAuthenticated, upload.single("avatar"), async (req, res) => {
   try {
     const userId = req.userId
     
-    // Pegamos os dados
+    // Pegamos os dados do corpo da requisição
     const { description, category, phone, city, neighborhood } = req.body
 
     let avatarUrl = null
 
-    // Lógica da Imagem (continua igual)
+    // Lógica da Imagem
     if (req.file) {
       const uploadResult = await cloudinary.uploader.upload(req.file.path, {
         folder: "upaon_avatars",
@@ -44,10 +46,12 @@ userRoutes.patch("/profile", ensureAuthenticated, upload.single("avatar"), async
       fs.unlinkSync(req.file.path)
     }
 
-    // --- A CORREÇÃO MÁGICA ESTÁ AQUI 👇 ---
-    
-    // Só vamos mexer no Provider se o usuário enviou uma CATEGORIA (ou seja, é Prestador)
-    const providerUpdate = category ? {
+    // --- SEGURANÇA MÁXIMA ---
+    // Verifica se category existe E se não é só um espaço em branco
+    const hasCategory = category && category.trim() !== ""
+
+    // Só cria/atualiza o Provider se tiver categoria válida
+    const providerUpdate = hasCategory ? {
       upsert: {
         create: {
           category: category,
@@ -58,7 +62,7 @@ userRoutes.patch("/profile", ensureAuthenticated, upload.single("avatar"), async
           description: description || undefined,
         },
       },
-    } : undefined // Se não enviou categoria, passa undefined (o Prisma ignora e não cria nada)
+    } : undefined 
 
     const updatedUser = await prisma.user.update({
       where: { id: userId },
@@ -70,7 +74,7 @@ userRoutes.patch("/profile", ensureAuthenticated, upload.single("avatar"), async
         city: city || undefined, 
         neighborhood: neighborhood || undefined,
 
-        // Dados do Prestador (Só atualiza se for prestador)
+        // Dados do Prestador (Só roda se providerUpdate não for undefined)
         provider: providerUpdate,
       },
       include: {
@@ -96,6 +100,7 @@ userRoutes.patch("/profile", ensureAuthenticated, upload.single("avatar"), async
   }
 })
 
+// 3. HISTÓRICO
 userRoutes.get("/:id/history", async (req, res) => {
   const { id } = req.params
 

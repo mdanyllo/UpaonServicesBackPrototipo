@@ -1,19 +1,14 @@
 import { Resend } from 'resend';
 
 const apiKey = process.env.RESEND_API_KEY;
-console.log("Verificando API Key no início:", apiKey ? `Existe (Começa com ${apiKey.substring(0, 5)}...)` : "NÃO EXISTE/UNDEFINED");
-
 const resend = new Resend(apiKey);
 
 export async function sendVerificationEmail(email, code) {
-  console.log("==============================================");
-  console.log(`🚀 INICIANDO ENVIO DE EMAIL PARA: ${email}`);
-  console.log(`🔑 Chave sendo usada: ${process.env.RESEND_API_KEY ? "Carregada" : "FALTANDO"}`);
   
 const fromEmail = 'Equipe UpaonServices <nao-responda@upaonservices.com.br>'; 
   
   try {
-    const { data, error } = await resend.emails.send({
+    const { error } = await resend.emails.send({
       from: fromEmail,
       to: email, 
       subject: 'Seu código de acesso',
@@ -35,14 +30,9 @@ const fromEmail = 'Equipe UpaonServices <nao-responda@upaonservices.com.br>';
     });
 
     if (error) {
-      console.error("O RESEND RECUSOU O ENVIO:");
       console.error(JSON.stringify(error, null, 2));
       return;
     }
-
-    console.log("O RESEND ACEITOU O PEDIDO!");
-    console.log("ID do Email:", data?.id);
-    console.log("==============================================");
 
   } catch (err) {
     console.error("ERRO DE CONEXÃO/CÓDIGO:");
