@@ -6,7 +6,7 @@ import fs from "fs"
 
 const userRoutes = Router() 
 
-// Listar os usuários
+// Lista os usuários
 userRoutes.get("/", async (req, res) => {
   const users = await prisma.user.findMany({
     select: {
@@ -17,9 +17,41 @@ userRoutes.get("/", async (req, res) => {
       phone: true,
       createdAt: true,
       avatarUrl: true,
+      city: true,       
+      neighborhood: true,  
+      provider: true       
     },
   })
   return res.json(users)
+})
+
+
+
+// Lista um único usuário por ID
+userRoutes.get("/:id", ensureAuthenticated, async (req, res) => {
+  const { id } = req.params
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id },
+      include: {
+        provider: true, 
+      }
+    })
+
+    if (!user) {
+      return res.status(404).json({ message: "Usuário não encontrado" })
+    }
+
+    delete user.password
+
+    return res.json(user)
+  } catch (error) {
+    return res.status(500).json({ message: "Erro ao buscar usuário" })
+  }
+})
+
+userRoutes.patch("/profile", ensureAuthenticated, async (req, res) => {
 })
 
 
