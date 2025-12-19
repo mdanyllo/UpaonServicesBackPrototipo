@@ -28,27 +28,35 @@ userRoutes.get("/", async (req, res) => {
 userRoutes.patch("/profile", ensureAuthenticated, upload.single("avatar"), async (req, res) => {
   try {
     const userId = req.userId
+    
+
     const { name, description, category, phone, city, neighborhood } = req.body
 
     let avatarUrl = null
 
-    // Lógica da Imagem
+    // Lógica da Imagem (Cloudinary)
     if (req.file) {
-      const uploadResult = await cloudinary.uploader.upload(req.file.path, {
-        folder: "upaon_avatars",
-        transformation: [
-          { width: 500, height: 500, crop: "fill", gravity: "face" }
-        ],
-        quality: "auto:good",
-        fetch_format: "auto", 
-      })
-      avatarUrl = uploadResult.secure_url
-      fs.unlinkSync(req.file.path)
+      try {
+        const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+          folder: "upaon_avatars",
+          transformation: [
+            { width: 500, height: 500, crop: "fill", gravity: "face" }
+          ],
+          quality: "auto:good",
+          fetch_format: "auto", 
+        })
+        avatarUrl = uploadResult.secure_url
+        // Deleta o arquivo local após upload
+        fs.unlinkSync(req.file.path)
+      } catch (uploadError) {
+        console.error("Erro no Cloudinary:", uploadError)
+        // Não trava o resto da atualização se a imagem falhar
+      }
     }
 
-    const hasCategory = category && category.trim() !== ""
-
-    // Só cria/atualiza o Provider se tiver categoria válida
+    // Preparar dados do Provider 
+    const hasCategory = category && category.trim() !== "" && category !== "undefined"
+    
     const providerUpdate = hasCategory ? {
       upsert: {
         create: {
@@ -62,18 +70,25 @@ userRoutes.patch("/profile", ensureAuthenticated, upload.single("avatar"), async
       },
     } : undefined 
 
+    // Preparar dados do User (Objeto limpo)
+    const cleanName = name && name !== "undefined" && name !== "null" ? name : undefined
+    const cleanPhone = phone && phone !== "undefined" && phone !== "null" ? phone : undefined
+    const cleanCity = city && city !== "undefined" && city !== "null" ? city : undefined
+    const cleanNeighborhood = neighborhood && neighborhood !== "undefined" && neighborhood !== "null" ? neighborhood : undefined
+
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
+        // Se avatarUrl for null, não atualiza (undefined). Se tiver url, atualiza.
         avatarUrl: avatarUrl || undefined,
         
-        // Dados do Usuário (Cliente e Prestador têm)
-        name: name || undefined, 
-        phone: phone || undefined,
-        city: city || undefined, 
-        neighborhood: neighborhood || undefined,
+        // Dados Básicos
+        name: cleanName, 
+        phone: cleanPhone,
+        city: cleanCity, 
+        neighborhood: cleanNeighborhood,
 
-        // Dados do Prestador (Só roda se providerUpdate não for undefined)
+        // Dados do Prestador
         provider: providerUpdate,
       },
       include: {
@@ -94,7 +109,7 @@ userRoutes.patch("/profile", ensureAuthenticated, upload.single("avatar"), async
     })
 
   } catch (error) {
-    console.error("Erro ao atualizar perfil:", error)
+    console.error("Erro CRÍTICO ao atualizar perfil:", error)
     return res.status(500).json({ message: "Erro interno ao atualizar perfil." })
   }
 })
