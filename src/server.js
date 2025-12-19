@@ -7,6 +7,7 @@ import userRoutes from "./routes/users.js"
 import statsRoutes from "./routes/stats.js"
 import categoriesRoutes from "./routes/categories.js"
 import providersRoutes from "./routes/providers.js"
+import reviewsRoutes from "./routes/reviews.js"
 
 
 const app = express()
@@ -46,6 +47,7 @@ app.use("/users", userRoutes)
 app.use("/stats", statsRoutes)
 app.use("/categories", categoriesRoutes)
 app.use("/providers", providersRoutes)
+app.use("/reviews", reviewsRoutes)
 
 
 // Health check
