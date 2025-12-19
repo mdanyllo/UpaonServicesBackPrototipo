@@ -7,16 +7,12 @@ export function ensureAuthenticated(req, res, next) {
     return res.status(401).json({ message: "Token não informado." })
   }
 
-  // O token geralmente vem como "Bearer <token>"
-  // O split separa pelo espaço e pegamos a segunda parte
   const [, token] = authToken.split(" ")
 
   try {
-    // Valida o token com a sua senha secreta
+    // Valida o token com a jwt_secret
     const decoded = jwt.verify(token, process.env.JWT_SECRET)
 
-    // AQUI ESTÁ A CORREÇÃO:
-    // Salva o ID do usuário (que está no campo 'sub' do token) na requisição
     req.userId = decoded.sub
 
     return next()

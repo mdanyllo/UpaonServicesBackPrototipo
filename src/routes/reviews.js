@@ -4,7 +4,7 @@ import { ensureAuthenticated } from "../middlewares/auth.js"
 
 const reviewsRoutes = Router()
 
-// 1. CRIAR AVALIAÇÃO E ATUALIZAR MÉDIA
+// Criar avaliação e calcular a média (máximo 5.0 estrelas)
 reviewsRoutes.post("/", ensureAuthenticated, async (req, res) => {
   const { providerId, rating, comment } = req.body
   const authorId = req.userId // Quem está avaliando (vem do token)
@@ -19,7 +19,7 @@ reviewsRoutes.post("/", ensureAuthenticated, async (req, res) => {
   }
 
   try {
-    // A. Verifica se o usuário não está se auto-avaliando (Opcional, mas recomendado)
+    // Verifica se o usuário não está se auto-avaliando
     const provider = await prisma.provider.findUnique({
       where: { id: providerId }
     })
@@ -32,7 +32,7 @@ reviewsRoutes.post("/", ensureAuthenticated, async (req, res) => {
       return res.status(400).json({ message: "Você não pode avaliar a si mesmo." })
     }
 
-    // B. Cria a Avaliação
+    //Cria a Avaliação
     const newReview = await prisma.review.create({
       data: {
         rating: Number(rating),
@@ -42,7 +42,7 @@ reviewsRoutes.post("/", ensureAuthenticated, async (req, res) => {
       }
     })
 
-    // C. CALCULA A NOVA MÉDIA (A Mágica acontece aqui ✨)
+    // C. Calcula a nova média
     const aggregations = await prisma.review.aggregate({
       _avg: {
         rating: true,
@@ -54,7 +54,7 @@ reviewsRoutes.post("/", ensureAuthenticated, async (req, res) => {
 
     const newAverage = aggregations._avg.rating || rating
 
-    // D. Atualiza a tabela do Prestador com a nota nova
+    //Atualiza a tabela do Prestador com a nota nova
     await prisma.provider.update({
       where: { id: providerId },
       data: {
@@ -70,7 +70,9 @@ reviewsRoutes.post("/", ensureAuthenticated, async (req, res) => {
   }
 })
 
-// 2. LISTAR AVALIAÇÕES DE UM PRESTADOR
+
+
+// Lista as avaliações do prestador
 reviewsRoutes.get("/:providerId", async (req, res) => {
   const { providerId } = req.params
 

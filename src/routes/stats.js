@@ -3,6 +3,7 @@ import { prisma } from "../prisma.js"
 
 const statsRoutes = Router()
 
+// Estatísticas públicas da plataforma
 statsRoutes.get("/", async (req, res) => {
   try {
     const totalProviders = await prisma.provider.count()

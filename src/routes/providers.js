@@ -3,7 +3,7 @@ import { prisma } from "../prisma.js"
 
 const providersRoutes = Router()
 
-// --- FUNÇÃO AUXILIAR: Normaliza texto (Tira acentos, minusculo) ---
+// Trata os textos enviados pelos usuários
 const normalizeText = (text) => {
   if (!text) return ""
   return text
@@ -13,17 +13,17 @@ const normalizeText = (text) => {
     .trim()
 }
 
-// 🔍 BUSCA AVANÇADA DE PRESTADORES
+
+
+// Busca avançada de prestadores
 providersRoutes.get("/", async (req, res) => {
-  // Adicionei 'neighborhood' aqui para usarmos na ordenação inteligente
   const { category, q, city, neighborhood } = req.query
 
   try {
-    // 1. BUSCA NO BANCO DE DADOS (Sua lógica original intacta)
     const providers = await prisma.provider.findMany({
       where: {
         AND: [
-          // Filtro por Categoria
+          // Filtro por categoria
           category
             ? {
                 category: {
@@ -33,7 +33,7 @@ providersRoutes.get("/", async (req, res) => {
               }
             : {},
 
-          // Filtro por Cidade (Buscando dentro de USER)
+          // Filtro por cidade
           city
             ? {
                 user: {
@@ -45,7 +45,7 @@ providersRoutes.get("/", async (req, res) => {
               }
             : {},
 
-          // Busca Geral (Texto 'q')
+          // Busca geral com texto
           q
             ? {
                 OR: [
@@ -64,7 +64,7 @@ providersRoutes.get("/", async (req, res) => {
             name: true,
             phone: true,
             avatarUrl: true,
-            // Dados de endereço do User
+            // Dados de endereço do usuário cliente
             city: true,
             neighborhood: true,
           },
@@ -72,8 +72,9 @@ providersRoutes.get("/", async (req, res) => {
       },
     })
 
-    // 2. ORDENAÇÃO INTELIGENTE (PÓS-BUSCA)
-    // Se o cliente enviou o bairro dele (neighborhood), ordenamos por proximidade
+
+
+    // Se o cliente enviou o bairro dele, ordenamos por proximidade
     if (neighborhood) {
       const termoBusca = normalizeText(neighborhood)
 
@@ -81,16 +82,12 @@ providersRoutes.get("/", async (req, res) => {
         const bairroA = normalizeText(a.user.neighborhood)
         const bairroB = normalizeText(b.user.neighborhood)
 
-        // Verifica se o bairro do prestador contém o que o cliente busca (ou vice-versa)
         const matchA = bairroA.includes(termoBusca) || (termoBusca && termoBusca.includes(bairroA))
         const matchB = bairroB.includes(termoBusca) || (termoBusca && termoBusca.includes(bairroB))
 
-        // Lógica de Sort:
-        // Se A tem match e B não, A vem primeiro (-1)
+        // Lógica de Sort
         if (matchA && !matchB) return -1
-        // Se B tem match e A não, B vem primeiro (1)
         if (!matchA && matchB) return 1
-        // Se empatar, mantém a ordem original (0)
         return 0
       })
     }
@@ -106,7 +103,8 @@ providersRoutes.get("/", async (req, res) => {
 })
 
 
-// ROTA GRAVAR CLIQUE ZAP
+
+// Gravar clique no botão de WhatsApp
 providersRoutes.post("/:id/contact", async (req, res) => {
   const { id } = req.params 
   const { clientId } = req.body 
@@ -124,15 +122,17 @@ providersRoutes.post("/:id/contact", async (req, res) => {
   }
 })
 
-// 2. ROTA DE LER
+
+
+// Ler e mostrar esse clique pro prestador
 providersRoutes.get("/:id/stats", async (req, res) => {
   const { id } = req.params
 
   try {
-    // Busca os logs e INCLUI os dados do cliente (nome, avatar, telefone)
+    // Busca os logs
     const logs = await prisma.contactLog.findMany({
       where: { providerId: id },
-      orderBy: { createdAt: 'desc' }, // Mais recentes primeiro
+      orderBy: { createdAt: 'desc' },
       include: {
         client: {
           select: {

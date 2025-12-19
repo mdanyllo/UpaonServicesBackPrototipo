@@ -6,7 +6,7 @@ import fs from "fs"
 
 const userRoutes = Router() 
 
-// 1. LISTAR USUÁRIOS
+// Listar os usuários
 userRoutes.get("/", async (req, res) => {
   const users = await prisma.user.findMany({
     select: {
@@ -22,13 +22,13 @@ userRoutes.get("/", async (req, res) => {
   return res.json(users)
 })
 
-// 2. ATUALIZAR PERFIL (BLINDADA)
+
+
+// Atualizar perfil de usuário
 userRoutes.patch("/profile", ensureAuthenticated, upload.single("avatar"), async (req, res) => {
   try {
     const userId = req.userId
-    
-    // Pegamos os dados do corpo da requisição
-    const { description, category, phone, city, neighborhood } = req.body
+    const { name, description, category, phone, city, neighborhood } = req.body
 
     let avatarUrl = null
 
@@ -46,8 +46,6 @@ userRoutes.patch("/profile", ensureAuthenticated, upload.single("avatar"), async
       fs.unlinkSync(req.file.path)
     }
 
-    // --- SEGURANÇA MÁXIMA ---
-    // Verifica se category existe E se não é só um espaço em branco
     const hasCategory = category && category.trim() !== ""
 
     // Só cria/atualiza o Provider se tiver categoria válida
@@ -70,6 +68,7 @@ userRoutes.patch("/profile", ensureAuthenticated, upload.single("avatar"), async
         avatarUrl: avatarUrl || undefined,
         
         // Dados do Usuário (Cliente e Prestador têm)
+        name: name || undefined, 
         phone: phone || undefined,
         city: city || undefined, 
         neighborhood: neighborhood || undefined,
@@ -100,7 +99,9 @@ userRoutes.patch("/profile", ensureAuthenticated, upload.single("avatar"), async
   }
 })
 
-// 3. HISTÓRICO
+
+
+// Histórico de serviços
 userRoutes.get("/:id/history", async (req, res) => {
   const { id } = req.params
 

@@ -3,9 +3,12 @@ import { Resend } from 'resend';
 const apiKey = process.env.RESEND_API_KEY;
 const resend = new Resend(apiKey);
 
-export async function sendVerificationEmail(email, code) {
-  
+
 const fromEmail = 'Equipe UpaonServices <nao-responda@upaonservices.com.br>'; 
+
+
+// Verficar o email
+export async function sendVerificationEmail(email, code) {
   
   try {
     const { error } = await resend.emails.send({
@@ -42,13 +45,13 @@ const fromEmail = 'Equipe UpaonServices <nao-responda@upaonservices.com.br>';
 
 
 
-//Função de Recuperação de Senha (NOVA - ADICIONE ISTO)
+//Recuperar a senha através do email
 export async function sendPasswordResetEmail(email, code) {
   try {
     await resend.emails.send({
-      from: 'Upaon Services <onboarding@resend.dev>',
+      from: fromEmail,
       to: email,
-      subject: 'Recuperação de Senha - Upaon Services',
+      subject: 'Recuperação de senha',
       html: `
         <div style="font-family: Arial, sans-serif; color: #333;">
           <h1>Recuperação de Senha</h1>

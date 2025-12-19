@@ -6,9 +6,8 @@ import { sendVerificationEmail, sendPasswordResetEmail } from "../services/email
 
 const authRoutes = Router()
 
-// ======================================================
-// ROTA CADASTRO
-// ======================================================
+
+// Cadastro
 authRoutes.post("/register", async (req, res) => {
   try {
     const {
@@ -37,13 +36,12 @@ authRoutes.post("/register", async (req, res) => {
       return res.status(400).json({ message: "Email já cadastrado" })
     }
 
-    // 1. Gera código de verificação
+    // Gera código de verificação
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
 
     const hashedPassword = await bcrypt.hash(password, 10)
 
-    // 2. CRIAÇÃO ATÔMICA (User + Endereço + Provider se necessário)
     const user = await prisma.user.create({
       data: {
         name,
@@ -70,7 +68,7 @@ authRoutes.post("/register", async (req, res) => {
       },
     })
 
-    // 3. Envia o email
+    // Envia o email
     await sendVerificationEmail(email, code);
 
     return res.status(201).json({
@@ -85,9 +83,9 @@ authRoutes.post("/register", async (req, res) => {
   }
 })
 
-// ======================================================
-// ROTA VERIFICAR EMAIL
-// ======================================================
+
+
+// Verifica o email
 authRoutes.post("/verify", async (req, res) => {
   const { email, code } = req.body;
 
@@ -138,9 +136,9 @@ authRoutes.post("/verify", async (req, res) => {
   }
 })
 
-// ======================================================
-// ROTA REENVIAR CÓDIGO
-// ======================================================
+
+
+// Reenviar o código (se o usuário pedir)
 authRoutes.post("/resend-code", async (req, res) => {
   const { email } = req.body
 
@@ -155,11 +153,11 @@ authRoutes.post("/resend-code", async (req, res) => {
       return res.status(400).json({ message: "Esta conta já foi verificada. Faça login." })
     }
 
-    // 1. Gera novo código e nova validade
+    // Gera novo código e nova validade
     const code = Math.floor(100000 + Math.random() * 900000).toString()
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // +10 min
 
-    // 2. Atualiza no banco
+    // Atualiza no banco
     await prisma.user.update({
       where: { email },
       data: {
@@ -168,7 +166,7 @@ authRoutes.post("/resend-code", async (req, res) => {
       }
     })
 
-    // 3. Reenvia o email
+    // Reenvia o email
     await sendVerificationEmail(email, code)
 
     return res.json({ message: "Novo código enviado! Verifique seu email." })
@@ -179,9 +177,9 @@ authRoutes.post("/resend-code", async (req, res) => {
   }
 })
 
-// ======================================================
-// NOVA ROTA: ESQUECI A SENHA (Gera código) 
-// ======================================================
+
+
+// Redefinir nova senha (usa o email para enviar um código)
 authRoutes.post("/forgot-password", async (req, res) => {
   const { email } = req.body
 
@@ -194,7 +192,7 @@ authRoutes.post("/forgot-password", async (req, res) => {
 
     // Gera código novo
     const code = Math.floor(100000 + Math.random() * 900000).toString()
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // 10 min
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000)
 
     // Salva no banco (reaproveitando os campos de verificação)
     await prisma.user.update({
@@ -216,9 +214,9 @@ authRoutes.post("/forgot-password", async (req, res) => {
   }
 })
 
-// ======================================================
-// NOVA ROTA: REDEFINIR A SENHA (Salva nova senha) 
-// ======================================================
+
+
+// Salvar a senha nova 
 authRoutes.post("/reset-password", async (req, res) => {
   const { email, code, newPassword } = req.body
 
@@ -261,9 +259,9 @@ authRoutes.post("/reset-password", async (req, res) => {
   }
 })
 
-// ======================================================
-// ROTA DE LOGIN
-// ======================================================
+
+
+// Login
 authRoutes.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body

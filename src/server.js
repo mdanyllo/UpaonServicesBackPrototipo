@@ -54,7 +54,7 @@ app.use("/reviews", reviewsRoutes)
 app.get("/", (req, res) => {
   return res.status(200).json({
     status: "ok",
-    message: "Backend rodando 🚀",
+    message: "Backend rodando",
     api: "Upaon Services",
     version: "1.0.0",
   })
@@ -63,6 +63,7 @@ app.get("/", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Backend rodando na porta ${PORT}`)
 })
+
 
 // mantém o Render acordado
 setInterval(() => {

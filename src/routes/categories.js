@@ -3,7 +3,7 @@ import { prisma } from "../prisma.js"
 
 const categoriesRoutes = Router()
 
-// 📌 Lista categorias únicas
+// Lista categorias únicas
 categoriesRoutes.get("/", async (req, res) => {
   try {
     const categories = await prisma.provider.findMany({
