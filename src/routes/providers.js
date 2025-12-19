@@ -15,84 +15,104 @@ const normalizeText = (text) => {
 
 
 
-// Busca avançada de prestadores
+// Busca avançada de prestadores com paginação
 providersRoutes.get("/", async (req, res) => {
+  // 1. Configuração da Paginação
+  const page = Number(req.query.page) || 1
+  const limit = Number(req.query.limit) || 10
+  const skip = (page - 1) * limit
+
+  // 2. Filtros da Requisição
   const { category, q, city, neighborhood } = req.query
 
+  // 3. Montagem do WHERE (Lógica do Prisma)
+  const where = {
+    AND: [
+      // Filtro por Categoria
+      category
+        ? {
+            category: {
+              equals: category,
+              mode: "insensitive",
+            },
+          }
+        : {},
+
+      // Filtro por Cidade
+      city
+        ? {
+            user: {
+              city: {
+                contains: city,
+                mode: "insensitive",
+              },
+            },
+          }
+        : {},
+      
+      // Filtro por Bairro (Se informado, filtramos direto no banco para performance)
+      neighborhood 
+        ? {
+            user: {
+                neighborhood: {
+                    contains: neighborhood,
+                    mode: "insensitive"
+                }
+            }
+        }
+        : {},
+
+      // Busca Geral (Texto)
+      q
+        ? {
+            OR: [
+              { description: { contains: q, mode: "insensitive" } },
+              { user: { name: { contains: q, mode: "insensitive" } } },
+              { user: { neighborhood: { contains: q, mode: "insensitive" } } },
+              { category: { contains: q, mode: "insensitive" } }
+            ],
+          }
+        : {},
+    ],
+  }
+
   try {
-    const providers = await prisma.provider.findMany({
-      where: {
-        AND: [
-          // Filtro por categoria
-          category
-            ? {
-                category: {
-                  equals: category,
-                  mode: "insensitive",
-                },
-              }
-            : {},
-
-          // Filtro por cidade
-          city
-            ? {
-                user: {
-                  city: {
-                    contains: city,
-                    mode: "insensitive",
-                  },
-                },
-              }
-            : {},
-
-          // Busca geral com texto
-          q
-            ? {
-                OR: [
-                  { description: { contains: q, mode: "insensitive" } },
-                  { user: { name: { contains: q, mode: "insensitive" } } },
-                  { user: { neighborhood: { contains: q, mode: "insensitive" } } },
-                ],
-              }
-            : {},
-        ],
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            phone: true,
-            avatarUrl: true,
-            // Dados de endereço do usuário cliente
-            city: true,
-            neighborhood: true,
+    // 4. Executa duas consultas em paralelo:
+    // A: Contar quantos itens existem no total (para saber o numero de paginas)
+    // B: Buscar os itens da página atual
+    const [totalCount, providers] = await Promise.all([
+      prisma.provider.count({ where }),
+      prisma.provider.findMany({
+        where,
+        take: limit, // Limite por página
+        skip: skip,  // Pula os anteriores
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              phone: true,
+              avatarUrl: true,
+              city: true,
+              neighborhood: true,
+            },
           },
         },
-      },
-    })
-
-
-
-    // Se o cliente enviou o bairro dele, ordenamos por proximidade
-    if (neighborhood) {
-      const termoBusca = normalizeText(neighborhood)
-
-      providers.sort((a, b) => {
-        const bairroA = normalizeText(a.user.neighborhood)
-        const bairroB = normalizeText(b.user.neighborhood)
-
-        const matchA = bairroA.includes(termoBusca) || (termoBusca && termoBusca.includes(bairroA))
-        const matchB = bairroB.includes(termoBusca) || (termoBusca && termoBusca.includes(bairroB))
-
-        // Lógica de Sort
-        if (matchA && !matchB) return -1
-        if (!matchA && matchB) return 1
-        return 0
+        orderBy: {
+            rating: 'desc' // Ordena pelos melhores avaliados
+        }
       })
-    }
+    ])
 
-    return res.json(providers)
+    // 5. Retorna no formato que o Frontend novo espera
+    return res.json({
+      data: providers,
+      meta: {
+        total: totalCount,
+        page,
+        lastPage: Math.ceil(totalCount / limit)
+      }
+    })
 
   } catch (error) {
     console.error("Erro providers:", error)

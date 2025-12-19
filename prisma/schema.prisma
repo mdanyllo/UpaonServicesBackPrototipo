@@ -76,4 +76,5 @@ enum UserRole {
   CLIENT
   PROVIDER
   BOTH
+  ADMIN
 }

@@ -4,6 +4,7 @@ import https from "https"
 
 import authRoutes from "./routes/auth.js"
 import userRoutes from "./routes/users.js"
+import adminRoutes from "./routes/admin.js"
 import statsRoutes from "./routes/stats.js"
 import categoriesRoutes from "./routes/categories.js"
 import providersRoutes from "./routes/providers.js"
@@ -44,6 +45,7 @@ app.use(express.json())
 // Rotas
 app.use("/auth", authRoutes)
 app.use("/users", userRoutes)
+app.use("/admin", adminRoutes)
 app.use("/stats", statsRoutes)
 app.use("/categories", categoriesRoutes)
 app.use("/providers", providersRoutes)
