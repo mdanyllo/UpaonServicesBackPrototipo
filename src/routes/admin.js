@@ -9,16 +9,21 @@ adminRoutes.use(ensureAuthenticated, ensureAdmin)
 
 // 1. STATS (Mantive igual)
 adminRoutes.get("/stats", async (req, res) => {
-  const [totalUsers, totalProviders, totalContacts] = await Promise.all([
+  const [totalUsers, totalProviders, totalContacts, paymentsSum] = await Promise.all([
     prisma.user.count(),
     prisma.provider.count(),
-    prisma.contactLog.count() 
+    prisma.contactLog.count(),
+    prisma.payment.aggregate({
+      where: { status: "approved" },
+      _sum: { amount: true }
+    })
   ])
 
   return res.json({
     users: totalUsers,
     providers: totalProviders,
-    totalContacts: totalContacts
+    totalContacts: totalContacts,
+    revenue: paymentsSum._sum.amount || 0 // Adicionado apenas o campo que faltava
   })
 })
 
