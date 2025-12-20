@@ -9,109 +9,114 @@ const client = new MercadoPagoConfig({
     accessToken: process.env.MP_ACCESS_TOKEN
 });
 
+// FUNÇÃO AUXILIAR DE ENTREGA
+async function aplicarVantagem(providerId, type) {
+  const trintaDias = new Date();
+  trintaDias.setDate(trintaDias.getDate() + 30);
+
+  if (type === 'ACTIVATION') {
+    await prisma.provider.update({
+      where: { id: providerId },
+      data: {
+        isActive: true, 
+        activatedUntil: trintaDias
+      }
+    });
+  } else {
+    await prisma.provider.update({
+      where: { id: providerId },
+      data: { 
+        isFeatured: true, 
+        featuredUntil: trintaDias
+      }
+    });
+  }
+}
+
 payRoutes.post('/', async (req, res) => {
   try {
-    const { formData, providerId } = req.body;
+    const { formData, providerId, type } = req.body;
     const payment = new Payment(client);
 
-    const precoReal = 2.00; 
-    
-const paymentResponse = await payment.create({
+    // TABELA DE PREÇOS NO BACKEND (A palavra final é daqui)
+    const tabelaPrecos = {
+      'FEATURED': 19.90,
+      'ACTIVATION': 1.99
+    };
+
+    const precoReal = tabelaPrecos[type] || 2.00; 
+
+    const paymentResponse = await payment.create({
       body: {
         transaction_amount: precoReal, 
         token: formData.token,
-        description: formData.description || "Pagamento de Destaque",
+        description: type === 'ACTIVATION' ? "Ativação UpaonServices" : "Destaque UpaonServices",
         installments: formData.installments,
         payment_method_id: formData.payment_method_id,
         issuer_id: formData.issuer_id,
         payer: {
-          email: formData.payer?.email || 'email@teste.com',
+          email: formData.payer?.email,
           identification: {
             type: formData.payer?.identification?.type || 'CPF',
-            // O ajuste principal está aqui embaixo:
-            number: String(formData.payer?.identification?.number || '93807001050').replace(/\D/g, '') 
+            number: String(formData.payer?.identification?.number || '').replace(/\D/g, '') 
           },
         },
       },
     });
 
-    // Salvar no banco
-    const savedPayment = await prisma.payment.create({
+    await prisma.payment.create({
       data: {
         externalId: String(paymentResponse.id),
         status: paymentResponse.status || 'pending',
-        amount: precoReal, // Salva o valor real cobrado
+        amount: precoReal,
         method: formData.payment_method_id,
         providerId: providerId,
+        type: type, 
       },
     });
 
-    // Lógica: Se aprovado na hora (Cartão), ativa o destaque
     if (paymentResponse.status === 'approved') {
-      await prisma.provider.update({
-        where: { id: providerId },
-        data: { isFeatured: true }
-      });
+      await aplicarVantagem(providerId, type);
     }
 
     res.status(201).json({
       status: paymentResponse.status,
       status_detail: paymentResponse.status_detail,
       id: paymentResponse.id,
-      // Dados necessários para o PIX aparecer no Front
       qr_code: paymentResponse.point_of_interaction?.transaction_data?.qr_code,
       ticket_url: paymentResponse.point_of_interaction?.transaction_data?.ticket_url
     });
 
-  }catch (error) {
-    // Log detalhado para ver no painel do Render
-    console.error('--- INÍCIO DO ERRO DETALHADO ---');
-    if (error.api_response && error.api_response.content) {
-      console.error('MENSAGEM DO MERCADO PAGO:', JSON.stringify(error.api_response.content, null, 2));
-    } else {
-      console.error('ERRO DO SISTEMA:', error.message || error);
-    }
-    console.error('--- FIM DO ERRO DETALHADO ---');
-
-    res.status(500).json({ 
-      error: 'Erro no processamento', 
-      message: error.api_response?.content?.message || error.message 
-    });
+  } catch (error) {
+    console.error('Erro no processamento:', error.api_response?.content || error);
+    res.status(500).json({ error: 'Erro ao processar' });
   }
 });
 
 payRoutes.post('/webhook', async (req, res) => {
   const { action, data } = req.body;
-
   if ((action === 'payment.updated' || action === 'payment.created') && data.id) {
     try {
       const payment = new Payment(client);
       const mpPayment = await payment.get({ id: data.id });
-
-      // Atualiza o status do pagamento
-      await prisma.payment.updateMany({
-        where: { externalId: String(mpPayment.id) },
-        data: { status: mpPayment.status },
+      const paymentRecord = await prisma.payment.findFirst({
+          where: { externalId: String(mpPayment.id) }
       });
 
-      // Se o status mudou para aprovado no Webhook (PIX pago depois)
-      if (mpPayment.status === 'approved') {
-        const paymentRecord = await prisma.payment.findFirst({
-            where: { externalId: String(mpPayment.id) }
-        });
-        
-        if (paymentRecord) {
-            await prisma.provider.update({
-                where: { id: paymentRecord.providerId },
-                data: { isFeatured: true }
-            });
-        }
+      if (paymentRecord) {
+          await prisma.payment.update({
+            where: { id: paymentRecord.id },
+            data: { status: mpPayment.status },
+          });
+
+          if (mpPayment.status === 'approved') {
+              await aplicarVantagem(paymentRecord.providerId, paymentRecord.type);
+          }
       }
     } catch (err) {
-      console.error('Erro no processamento do webhook:', err);
+      console.error('Erro Webhook:', err);
     }
   }
-
   res.sendStatus(200);
 });
 
