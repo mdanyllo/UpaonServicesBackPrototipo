@@ -39,7 +39,8 @@ model Provider {
   category    String
   description String?
   
-  rating      Float    @default(5.0) 
+  rating      Float    @default(5.0)
+  isFeatured  Boolean  @default(false)
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -48,6 +49,8 @@ model Provider {
   contactLogs ContactLog[]
 
   reviewsReceived Review[] 
+
+  payments Payment[]
 }
 
 model Review {
@@ -70,6 +73,20 @@ model ContactLog {
   provider   Provider @relation(fields: [providerId], references: [id])
   clientId   String
   client     User     @relation(fields: [clientId], references: [id])
+}
+
+model Payment {
+  id           String   @id @default(uuid())
+  externalId   String 
+  status       String
+  amount       Float
+  method       String
+  
+  provider     Provider @relation(fields: [providerId], references: [id])
+  providerId   String
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 enum UserRole {

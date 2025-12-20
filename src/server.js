@@ -9,7 +9,7 @@ import statsRoutes from "./routes/stats.js"
 import categoriesRoutes from "./routes/categories.js"
 import providersRoutes from "./routes/providers.js"
 import reviewsRoutes from "./routes/reviews.js"
-
+import payRoutes from "./routes/payment.js"
 
 const app = express()
 
@@ -47,6 +47,7 @@ app.use(express.json())
 app.use("/auth", authRoutes)
 app.use("/users", userRoutes)
 app.use("/admin", adminRoutes)
+app.use("/payment", payRoutes)
 app.use("/stats", statsRoutes)
 app.use("/categories", categoriesRoutes)
 app.use("/providers", providersRoutes)

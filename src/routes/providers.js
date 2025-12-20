@@ -13,98 +13,64 @@ const normalizeText = (text) => {
     .trim()
 }
 
-
-
-// Busca avançada de prestadores com paginação
+// 1. BUSCA AVANÇADA (LISTA)
 providersRoutes.get("/", async (req, res) => {
-  // 1. Configuração da Paginação
-  const page = Number(req.query.page) || 1
-  const limit = Number(req.query.limit) || 10
-  const skip = (page - 1) * limit
+  try {
+    // Configuração da Paginação
+    const page = Number(req.query.page) || 1
+    const limit = Number(req.query.limit) || 10
+    const skip = (page - 1) * limit
 
-  // 2. Filtros da Requisição
-  const { category, q, city, neighborhood } = req.query
+    // Filtros da Requisição
+    const { category, q, city, neighborhood } = req.query
 
-  // 3. Montagem do WHERE (Lógica do Prisma)
-  const where = {
-    AND: [
-      // Filtro por Categoria
-      category
-        ? {
-            category: {
-              equals: category,
-              mode: "insensitive",
-            },
-          }
-        : {},
+    // Montagem do WHERE
+    const where = {
+      AND: [
+        // Filtro por Categoria
+        category ? { category: { equals: category, mode: "insensitive" } } : {},
 
-      // Filtro por Cidade
-      city
-        ? {
-            user: {
-              city: {
-                contains: city,
-                mode: "insensitive",
-              },
-            },
-          }
-        : {},
+        // Filtro por Cidade
+        city ? { user: { city: { contains: city, mode: "insensitive" } } } : {},
       
-      // Filtro por Bairro (Se informado, filtramos direto no banco para performance)
-      neighborhood 
-        ? {
-            user: {
-                neighborhood: {
-                    contains: neighborhood,
-                    mode: "insensitive"
-                }
-            }
-        }
-        : {},
+        // Filtro por Bairro
+        neighborhood ? { user: { neighborhood: { contains: neighborhood, mode: "insensitive" } } } : {},
 
-      // Busca Geral (Texto)
-      q
-        ? {
+        // Busca Geral (Texto)
+        q ? {
             OR: [
               { description: { contains: q, mode: "insensitive" } },
               { user: { name: { contains: q, mode: "insensitive" } } },
               { user: { neighborhood: { contains: q, mode: "insensitive" } } },
               { category: { contains: q, mode: "insensitive" } }
             ],
-          }
-        : {},
-    ],
-  }
+          } : {},
+      ],
+    }
 
-  try {
-    // 4. Executa duas consultas em paralelo:
-    // A: Contar quantos itens existem no total (para saber o numero de paginas)
-    // B: Buscar os itens da página atual
+    // Executa as consultas
     const [totalCount, providers] = await Promise.all([
       prisma.provider.count({ where }),
       prisma.provider.findMany({
         where,
-        take: limit, // Limite por página
-        skip: skip,  // Pula os anteriores
+        take: limit,
+        skip: skip,
         include: {
           user: {
             select: {
-              id: true,
-              name: true,
-              phone: true,
-              avatarUrl: true,
-              city: true,
-              neighborhood: true,
+              id: true, name: true, phone: true, avatarUrl: true, 
+              city: true, neighborhood: true
             },
           },
         },
-        orderBy: {
-            rating: 'desc' // Ordena pelos melhores avaliados
-        }
+        orderBy: [
+            { isFeatured: 'desc' }, // 1º Destaques
+            { rating: 'desc' },     // 2º Melhores avaliados
+            { createdAt: 'desc' }   // 3º Mais novos
+        ]
       })
     ])
 
-    // 5. Retorna no formato que o Frontend novo espera
     return res.json({
       data: providers,
       meta: {
@@ -116,25 +82,48 @@ providersRoutes.get("/", async (req, res) => {
 
   } catch (error) {
     console.error("Erro providers:", error)
-    return res.status(500).json({
-      message: "Erro ao buscar prestadores",
-    })
+    return res.status(500).json({ message: "Erro ao buscar prestadores" })
   }
 })
 
+// 2. BUSCAR UM ÚNICO PRESTADOR (ESSENCIAL PARA O PERFIL)
+providersRoutes.get("/:id", async (req, res) => {
+    const { id } = req.params
+    try {
+        const provider = await prisma.provider.findUnique({
+            where: { id },
+            include: {
+                user: {
+                    select: {
+                        id: true, name: true, avatarUrl: true, 
+                        city: true, neighborhood: true, phone: true
+                    }
+                }
+            }
+        })
 
+        if (!provider) return res.status(404).json({ error: "Não encontrado" })
 
-// Gravar clique no botão de WhatsApp
+        // Incrementa visualização (sem travar a resposta)
+        prisma.provider.update({
+            where: { id },
+            data: { appearances: { increment: 1 } }
+        }).catch(() => {}) // Ignora erro se o campo ainda não existir
+
+        return res.json(provider)
+    } catch (error) {
+        return res.status(500).json({ error: "Erro interno" })
+    }
+})
+
+// 3. REGISTRAR CLIQUE NO WHATSAPP
 providersRoutes.post("/:id/contact", async (req, res) => {
   const { id } = req.params 
   const { clientId } = req.body 
 
   try {
     await prisma.contactLog.create({
-      data: {
-        providerId: id,
-        clientId: clientId
-      }
+      data: { providerId: id, clientId: clientId }
     })
     return res.status(201).json({ message: "Clique registrado" })
   } catch (error) {
@@ -142,37 +131,21 @@ providersRoutes.post("/:id/contact", async (req, res) => {
   }
 })
 
-
-
-// Ler e mostrar esse clique pro prestador
+// 4. ESTATÍSTICAS DO PRESTADOR
 providersRoutes.get("/:id/stats", async (req, res) => {
   const { id } = req.params
-
   try {
-    // Busca os logs
     const logs = await prisma.contactLog.findMany({
       where: { providerId: id },
       orderBy: { createdAt: 'desc' },
       include: {
         client: {
-          select: {
-            name: true,
-            avatarUrl: true,
-            phone: true,
-            email: true
-          }
+          select: { name: true, avatarUrl: true, phone: true, email: true }
         }
       }
     })
-    
-    // Retorna a contagem e a lista
-    return res.json({ 
-      contacts: logs.length, 
-      logs: logs 
-    })
-
+    return res.json({ contacts: logs.length, logs: logs })
   } catch (error) {
-    console.error(error)
     return res.status(500).json({ contacts: 0, logs: [] })
   }
 })

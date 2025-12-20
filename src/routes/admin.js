@@ -1,42 +1,35 @@
 import { Router } from "express"
 import { prisma } from "../prisma.js"
-import { ensureAuthenticated } from "../middlewares/auth.js"
 import { ensureAdmin } from "../middlewares/ensureAdmin.js"
+import { ensureAuthenticated } from "../middlewares/auth.js"
 
 const adminRoutes = Router()
 
-// Middleware duplo: Tem que estar logado E ser admin
 adminRoutes.use(ensureAuthenticated, ensureAdmin)
 
-// 1. MÉTRICAS GERAIS (DASHBOARD)
+// 1. STATS (Mantive igual)
 adminRoutes.get("/stats", async (req, res) => {
-  // Executa tudo em paralelo pra ser rápido
-  const [totalUsers, totalProviders, totalVisits] = await Promise.all([
+  const [totalUsers, totalProviders, totalContacts] = await Promise.all([
     prisma.user.count(),
     prisma.provider.count(),
-    prisma.provider.aggregate({
-        _sum: { appearances: true } // Soma todas as impressões
-    })
+    prisma.contactLog.count() 
   ])
-
-  // Busca os 5 usuários mais recentes
-  const recentUsers = await prisma.user.findMany({
-    take: 5,
-    orderBy: { createdAt: 'desc' },
-    select: { id: true, name: true, email: true, role: true, createdAt: true }
-  })
 
   return res.json({
     users: totalUsers,
     providers: totalProviders,
-    impressions: totalVisits._sum.appearances || 0,
-    recentUsers
+    totalContacts: totalContacts
   })
 })
 
-// 2. LISTAR TODOS OS USUÁRIOS (COM BUSCA)
+// 2. LISTAR USUÁRIOS (COM PAGINAÇÃO E BUSCA)
 adminRoutes.get("/users", async (req, res) => {
-    const { q } = req.query // Busca por nome ou email
+    const { q, page = 1, limit = 10 } = req.query
+    
+    // Converte para números
+    const pageInt = parseInt(page)
+    const limitInt = parseInt(limit)
+    const skip = (pageInt - 1) * limitInt
 
     const where = q ? {
         OR: [
@@ -45,28 +38,56 @@ adminRoutes.get("/users", async (req, res) => {
         ]
     } : {}
 
-    const users = await prisma.user.findMany({
-        where,
-        orderBy: { createdAt: 'desc' }, // Mais novos primeiro
-        include: { provider: true } // Traz dados de provider se tiver
-    })
+    // Roda duas queries: uma pra contar o total (pra saber quantas páginas tem) e outra pra pegar os dados
+    const [count, users] = await Promise.all([
+        prisma.user.count({ where }),
+        prisma.user.findMany({
+            where,
+            take: limitInt,
+            skip: skip,
+            orderBy: { createdAt: 'desc' },
+            include: { 
+                provider: true // Importante para ver se é Featured
+            }
+        })
+    ])
 
-    return res.json(users)
+    return res.json({
+        data: users,
+        meta: {
+            total: count,
+            page: pageInt,
+            lastPage: Math.ceil(count / limitInt)
+        }
+    })
 })
 
-// 3. BANIR/DESBANIR USUÁRIO (Toggle)
+// 3. ALTERAR STATUS DE "DESTAQUE" (FEATURED)
+adminRoutes.patch("/providers/:providerId/toggle-feature", async (req, res) => {
+    const { providerId } = req.params
+
+    // Busca o status atual
+    const provider = await prisma.provider.findUnique({ where: { id: providerId } })
+
+    if (!provider) return res.status(404).json({ error: "Prestador não encontrado" })
+
+    // Inverte o status (se ta true vira false, se ta false vira true)
+    const updated = await prisma.provider.update({
+        where: { id: providerId },
+        data: { isFeatured: !provider.isFeatured }
+    })
+
+    return res.json(updated)
+})
+
+// 4. DELETAR USUÁRIO
 adminRoutes.patch("/users/:id/toggle-active", async (req, res) => {
     const { id } = req.params
-    
-    // Aqui assumimos que você vai criar um campo 'active' no futuro.
-    // Por enquanto, vamos simular deletando ou apenas retornando sucesso.
-    // Para o MVP, vamos DELETAR o usuário (Use com cuidado!)
-    
     try {
         await prisma.user.delete({ where: { id } })
-        return res.json({ message: "Usuário deletado com sucesso." })
+        return res.json({ message: "Usuário deletado." })
     } catch (error) {
-        return res.status(500).json({ message: "Erro ao deletar usuário." })
+        return res.status(500).json({ message: "Erro ao deletar." })
     }
 })
 
