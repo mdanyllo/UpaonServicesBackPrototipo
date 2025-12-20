@@ -26,6 +26,7 @@ providersRoutes.get("/", async (req, res) => {
 
     // Montagem do WHERE
     const where = {
+      isActive: true,
       AND: [
         // Filtro por Categoria
         category ? { category: { equals: category, mode: "insensitive" } } : {},
@@ -91,7 +92,7 @@ providersRoutes.get("/:id", async (req, res) => {
     const { id } = req.params
     try {
         const provider = await prisma.provider.findUnique({
-            where: { id },
+            where: { id, isActive: true, },
             include: {
                 user: {
                     select: {
