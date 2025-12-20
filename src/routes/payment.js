@@ -15,23 +15,25 @@ payRoutes.post('/', async (req, res) => {
     const payment = new Payment(client);
 
     const precoReal = 2.00; 
-
+    
 const paymentResponse = await payment.create({
-  body: {
-    transaction_amount: precoReal,
-    description: "Pagamento de Destaque Premium",
-    payment_method_id: formData.payment_method_id,
-    token: formData.token, // O SDK ignora se for PIX
-    installments: formData.installments,
-    payer: {
-      email: formData.payer.email || 'test_user_123@testuser.com',
-      identification: {
-        type: 'CPF',
-        number: formData.payer.identification.number.replace(/\D/g, '') // Remove pontos e traços
-      }
-    },
-  },
-});
+      body: {
+        transaction_amount: precoReal, 
+        token: formData.token,
+        description: formData.description || "Pagamento de Destaque",
+        installments: formData.installments,
+        payment_method_id: formData.payment_method_id,
+        issuer_id: formData.issuer_id,
+        payer: {
+          email: formData.payer?.email || 'email@teste.com',
+          identification: {
+            type: formData.payer?.identification?.type || 'CPF',
+            // O ajuste principal está aqui embaixo:
+            number: formData.payer?.identification?.number || '05212345678' 
+          },
+        },
+      },
+    });
 
     // Salvar no banco
     const savedPayment = await prisma.payment.create({
