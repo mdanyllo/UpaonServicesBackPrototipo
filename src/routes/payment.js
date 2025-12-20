@@ -16,20 +16,22 @@ payRoutes.post('/', async (req, res) => {
 
     const precoReal = 2.00; 
 
-    const paymentResponse = await payment.create({
-      body: {
-        transaction_amount: precoReal, // Valor controlado pelo servidor
-        token: formData.token,
-        description: formData.description,
-        installments: formData.installments,
-        payment_method_id: formData.payment_method_id,
-        issuer_id: formData.issuer_id,
-        payer: {
-          email: formData.payer.email,
-          identification: formData.payer.identification,
-        },
-      },
-    });
+const paymentResponse = await payment.create({
+  body: {
+    transaction_amount: precoReal,
+    description: "Pagamento de Destaque Premium",
+    payment_method_id: formData.payment_method_id,
+    token: formData.token, // O SDK ignora se for PIX
+    installments: formData.installments,
+    payer: {
+      email: formData.payer.email || 'test_user_123@testuser.com',
+      identification: {
+        type: 'CPF',
+        number: formData.payer.identification.number.replace(/\D/g, '') // Remove pontos e traços
+      }
+    },
+  },
+});
 
     // Salvar no banco
     const savedPayment = await prisma.payment.create({
@@ -59,9 +61,20 @@ payRoutes.post('/', async (req, res) => {
       ticket_url: paymentResponse.point_of_interaction?.transaction_data?.ticket_url
     });
 
-  } catch (error) {
-    console.error('Erro no pagamento:', error);
-    res.status(500).json({ error: 'Erro ao processar pagamento' });
+  }catch (error) {
+    // Log detalhado para ver no painel do Render
+    console.error('--- INÍCIO DO ERRO DETALHADO ---');
+    if (error.api_response && error.api_response.content) {
+      console.error('MENSAGEM DO MERCADO PAGO:', JSON.stringify(error.api_response.content, null, 2));
+    } else {
+      console.error('ERRO DO SISTEMA:', error.message || error);
+    }
+    console.error('--- FIM DO ERRO DETALHADO ---');
+
+    res.status(500).json({ 
+      error: 'Erro no processamento', 
+      message: error.api_response?.content?.message || error.message 
+    });
   }
 });
 
