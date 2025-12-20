@@ -14,8 +14,7 @@ payRoutes.post('/', async (req, res) => {
     const { formData, providerId } = req.body;
     const payment = new Payment(client);
 
-    // Definição do valor fixo por segurança (evita alteração no front)
-    const precoReal = 49.90; 
+    const precoReal = 2.00; 
 
     const paymentResponse = await payment.create({
       body: {
