@@ -23,7 +23,7 @@ adminRoutes.get("/stats", async (req, res) => {
     users: totalUsers,
     providers: totalProviders,
     totalContacts: totalContacts,
-    revenue: paymentsSum._sum.amount || 0 // Adicionado apenas o campo que faltava
+    revenue: paymentsSum._sum.amount || 0 
   })
 })
 
@@ -31,7 +31,6 @@ adminRoutes.get("/stats", async (req, res) => {
 adminRoutes.get("/users", async (req, res) => {
     const { q, page = 1, limit = 10 } = req.query
     
-    // Converte para números
     const pageInt = parseInt(page)
     const limitInt = parseInt(limit)
     const skip = (pageInt - 1) * limitInt
@@ -43,7 +42,6 @@ adminRoutes.get("/users", async (req, res) => {
         ]
     } : {}
 
-    // Roda duas queries: uma pra contar o total (pra saber quantas páginas tem) e outra pra pegar os dados
     const [count, users] = await Promise.all([
         prisma.user.count({ where }),
         prisma.user.findMany({
@@ -52,7 +50,7 @@ adminRoutes.get("/users", async (req, res) => {
             skip: skip,
             orderBy: { createdAt: 'desc' },
             include: { 
-                provider: true // Importante para ver se é Featured
+                provider: true 
             }
         })
     ])
@@ -71,12 +69,10 @@ adminRoutes.get("/users", async (req, res) => {
 adminRoutes.patch("/providers/:providerId/toggle-feature", async (req, res) => {
     const { providerId } = req.params
 
-    // Busca o status atual
     const provider = await prisma.provider.findUnique({ where: { id: providerId } })
 
     if (!provider) return res.status(404).json({ error: "Prestador não encontrado" })
 
-    // Inverte o status (se ta true vira false, se ta false vira true)
     const updated = await prisma.provider.update({
         where: { id: providerId },
         data: { isFeatured: !provider.isFeatured }
@@ -85,14 +81,24 @@ adminRoutes.patch("/providers/:providerId/toggle-feature", async (req, res) => {
     return res.json(updated)
 })
 
-// 4. DELETAR USUÁRIO
+// 4. "DELETAR" USUÁRIO (ADAPTADO PARA DESATIVAR)
 adminRoutes.patch("/users/:id/toggle-active", async (req, res) => {
     const { id } = req.params
     try {
-        await prisma.user.delete({ where: { id } })
-        return res.json({ message: "Usuário deletado." })
+        // Em vez de delete (que dá erro 500), fazemos update no Provider
+        // Isso desativa o acesso e remove o prestador das buscas do site
+        await prisma.provider.updateMany({
+            where: { userId: id },
+            data: { 
+                isActive: false,
+                isFeatured: false 
+            }
+        })
+
+        return res.json({ message: "Usuário desativado com sucesso." })
     } catch (error) {
-        return res.status(500).json({ message: "Erro ao deletar." })
+        console.error("Erro ao desativar:", error)
+        return res.status(500).json({ message: "Erro ao desativar usuário." })
     }
 })
 
