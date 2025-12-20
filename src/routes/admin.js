@@ -81,25 +81,47 @@ adminRoutes.patch("/providers/:providerId/toggle-feature", async (req, res) => {
     return res.json(updated)
 })
 
-// 4. "DELETAR" USUÁRIO (ADAPTADO PARA DESATIVAR)
+// 4. ALTERAR STATUS (ATIVA / DESATIVA)
 adminRoutes.patch("/users/:id/toggle-active", async (req, res) => {
-    const { id } = req.params
+    const { id } = req.params;
     try {
-        // Em vez de delete (que dá erro 500), fazemos update no Provider
-        // Isso desativa o acesso e remove o prestador das buscas do site
-        await prisma.provider.updateMany({
-            where: { userId: id },
-            data: { 
-                isActive: false,
-                isFeatured: false 
-            }
-        })
+        // 1. Primeiro buscamos o estado atual do provider
+        const user = await prisma.user.findUnique({
+            where: { id },
+            include: { provider: true }
+        });
 
-        return res.json({ message: "Usuário desativado com sucesso." })
+        if (!user || !user.provider) {
+            return res.status(404).json({ message: "Prestador não encontrado." });
+        }
+
+        // 2. Invertemos o valor de isActive
+        const novoStatus = !user.provider.isActive;
+
+        // 3. Se estivermos ATIVANDO, definimos uma data de expiração (ex: +30 dias)
+        // Se estivermos DESATIVANDO, removemos o destaque também
+        const dataUpdate = {
+            isActive: novoStatus,
+            isFeatured: novoStatus ? user.provider.isFeatured : false
+        };
+
+        // Se estiver ativando agora e não tiver data, damos 30 dias de bônus ou mantemos a atual
+        if (novoStatus && !user.provider.activatedUntil) {
+            const dataExpiracao = new Date();
+            dataExpiracao.setDate(dataExpiracao.getDate() + 30);
+            dataUpdate.activatedUntil = dataExpiracao;
+        }
+
+        await prisma.provider.update({
+            where: { userId: id },
+            data: dataUpdate
+        });
+
+        return res.json({ message: `Usuário ${novoStatus ? 'ativado' : 'desativado'} com sucesso.` });
     } catch (error) {
-        console.error("Erro ao desativar:", error)
-        return res.status(500).json({ message: "Erro ao desativar usuário." })
+        console.error("Erro ao alternar status:", error);
+        return res.status(500).json({ message: "Erro ao processar alteração de status." });
     }
-})
+});
 
 export default adminRoutes
