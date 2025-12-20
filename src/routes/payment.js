@@ -29,7 +29,7 @@ const paymentResponse = await payment.create({
           identification: {
             type: formData.payer?.identification?.type || 'CPF',
             // O ajuste principal está aqui embaixo:
-            number: String(formData.payer?.identification?.number || '05212345678').replace(/\D/g, '') 
+            number: String(formData.payer?.identification?.number || '93807001050').replace(/\D/g, '') 
           },
         },
       },
