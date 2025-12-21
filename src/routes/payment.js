@@ -22,6 +22,18 @@ async function aplicarVantagem(providerId, type) {
         activatedUntil: trintaDias
       }
     });
+
+    const provider = await prisma.provider.findUnique({
+      where: { id: providerId },
+      select: { userId: true }
+    });
+
+    if (provider) {
+      await prisma.user.update({
+        where: { id: provider.userId },
+        data: { isActivated: true }
+      });
+    }
   } else {
     await prisma.provider.update({
       where: { id: providerId },
@@ -35,15 +47,21 @@ async function aplicarVantagem(providerId, type) {
 
 payRoutes.post('/', async (req, res) => {
   try {
-    const { formData, providerId, type } = req.body;
+    let { formData, providerId, type } = req.body;
     const payment = new Payment(client);
 
-    // TABELA DE PREÇOS NO BACKEND (A palavra final é daqui)
-    const tabelaPrecos = {
-      'FEATURED': 19.90,
-      'ACTIVATION': 1.99
-    };
+    // Validação de existência do Provider para evitar erro P2003
+    let validProvider = await prisma.provider.findUnique({ where: { id: providerId } });
 
+    if (!validProvider) {
+      validProvider = await prisma.provider.findFirst({ where: { userId: providerId } });
+      if (!validProvider) {
+        return res.status(400).json({ error: 'Prestador não localizado.' });
+      }
+      providerId = validProvider.id;
+    }
+
+    const tabelaPrecos = { 'FEATURED': 19.90, 'ACTIVATION': 1.99 };
     const precoReal = tabelaPrecos[type] || 2.00; 
 
     const paymentResponse = await payment.create({
@@ -58,12 +76,15 @@ payRoutes.post('/', async (req, res) => {
           email: formData.payer?.email,
           identification: {
             type: formData.payer?.identification?.type || 'CPF',
-            number: String(formData.payer?.identification?.number || '').replace(/\D/g, '') 
+            number: String(formData.payer?.identification?.number || formData.identification?.number || '').replace(/\D/g, '') 
           },
         },
       },
     });
 
+    console.log(`Pagamento MP: ${paymentResponse.status} - ${paymentResponse.status_detail}`);
+
+    // Cria registro no banco
     await prisma.payment.create({
       data: {
         externalId: String(paymentResponse.id),
@@ -89,7 +110,7 @@ payRoutes.post('/', async (req, res) => {
 
   } catch (error) {
     console.error('Erro no processamento:', error.api_response?.content || error);
-    res.status(500).json({ error: 'Erro ao processar' });
+    res.status(500).json({ error: 'Erro interno ao processar' });
   }
 });
 
