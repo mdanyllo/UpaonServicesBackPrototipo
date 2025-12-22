@@ -139,13 +139,13 @@ cron.schedule("0 8 * * *", async () => {
       await resend.emails.send({
         from: 'Equipe UpaonServices <nao-responda@upaonservices.com.br>',
         to: p.user.email,
-        subject: 'O seu destaque na página inicial está a expirar! ⭐',
+        subject: 'O seu destaque na página inicial está a expirar! 🚀',
         html: `
           <div style="background-color: #09090b; color: #ffffff; padding: 40px; font-family: sans-serif; border-radius: 12px; border: 1px solid #27272a;">
             <h1 style="color: #eab308; font-size: 24px;">Atenção ao seu Destaque, ${p.user.name}!</h1>
             <p style="color: #a1a1aa; font-size: 16px; line-height: 1.6;">
               O seu perfil deixará de aparecer no topo das pesquisas em <strong>3 dias</strong>. 
-              Mantenha-se em evidência para garantir mais cliques e contactos.
+              Mantenha-se em evidência para garantir mais cliques e contatos.
             </p>
             <div style="margin-top: 30px; padding: 20px; background: #1c1917; border: 1px solid #eab308; border-radius: 8px; text-align: center;">
               <p style="margin: 0; color: #eab308; font-size: 14px; font-weight: bold;">EXPIRA EM:</p>
@@ -157,6 +157,9 @@ cron.schedule("0 8 * * *", async () => {
                style="display: block; margin-top: 30px; background: #eab308; color: #000000; text-align: center; padding: 15px; border-radius: 8px; text-decoration: none; font-weight: bold;">
                RENOVAR DESTAQUE AGORA
             </a>
+             <p style="margin-top: 20px; color: #71717a; font-size: 12px; text-align: center;">
+              Se você já realizou o pagamento, desconsidere este aviso.
+            </p>
           </div>
         `
       });
