@@ -20,10 +20,12 @@ authRoutes.post("/register", async (req, res) => {
       description,
       city,
       neighborhood,
+      latitude,
+      longitude 
     } = req.body
 
     // Validações básicas
-    if (!name || !email || !password || !role) {
+    if (!name || !email || !password || !role || !city || !neighborhood) {
       return res.status(400).json({ message: "Dados obrigatórios" })
     }
 
@@ -52,6 +54,9 @@ authRoutes.post("/register", async (req, res) => {
         
         city: city || "São Luís - MA",
         neighborhood: neighborhood || "",
+
+        latitude: latitude ? parseFloat(latitude) : null,
+        longitude: longitude ? parseFloat(longitude) : null,
         
         // Dados de Verificação
         isEmailVerified: false,
@@ -315,6 +320,8 @@ authRoutes.post("/login", async (req, res) => {
         avatarUrl: user.avatarUrl,
         city: user.city, 
         neighborhood: user.neighborhood,
+        latitude: user.latitude,  
+        longitude: user.longitude,
         provider: user.provider
           ? {
               id: user.provider.id,

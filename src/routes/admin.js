@@ -7,6 +7,7 @@ const adminRoutes = Router()
 
 adminRoutes.use(ensureAuthenticated, ensureAdmin)
 
+
 // 1. STATS (Mantive igual)
 adminRoutes.get("/stats", async (req, res) => {
   const [totalUsers, totalProviders, totalContacts, paymentsSum] = await Promise.all([
@@ -26,6 +27,8 @@ adminRoutes.get("/stats", async (req, res) => {
     revenue: paymentsSum._sum.amount || 0 
   })
 })
+
+
 
 // 2. LISTAR USUÁRIOS (COM PAGINAÇÃO E BUSCA)
 adminRoutes.get("/users", async (req, res) => {
@@ -65,6 +68,8 @@ adminRoutes.get("/users", async (req, res) => {
     })
 })
 
+
+
 // 3. ALTERAR STATUS DE "DESTAQUE" (FEATURED)
 adminRoutes.patch("/providers/:providerId/toggle-feature", async (req, res) => {
     const { providerId } = req.params
@@ -80,6 +85,8 @@ adminRoutes.patch("/providers/:providerId/toggle-feature", async (req, res) => {
 
     return res.json(updated)
 })
+
+
 
 // 4. ALTERAR STATUS (ATIVA / DESATIVA)
 adminRoutes.patch("/users/:id/toggle-active", async (req, res) => {
@@ -122,6 +129,27 @@ adminRoutes.patch("/users/:id/toggle-active", async (req, res) => {
         console.error("Erro ao alternar status:", error);
         return res.status(500).json({ message: "Erro ao processar alteração de status." });
     }
+})
+
+
+// Mapa de calor
+authRoutes.get("/admin/heatmap", async (req, res) => {
+  try {
+    const usersLocation = await prisma.user.findMany({
+      where: {
+        latitude: { not: null },
+        longitude: { not: null }
+      },
+      select: {
+        latitude: true,
+        longitude: true,
+        role: true 
+      }
+    });
+    return res.json(usersLocation);
+  } catch (error) {
+    return res.status(500).json({ message: "Erro ao carregar mapa" });
+  }
 });
 
 export default adminRoutes

@@ -60,7 +60,7 @@ providersRoutes.get("/", async (req, res) => {
           user: {
             select: {
               id: true, name: true, phone: true, avatarUrl: true, 
-              city: true, neighborhood: true
+              city: true, neighborhood: true, latitude: true, longitude: true,
             },
           },
         },
@@ -97,7 +97,8 @@ providersRoutes.get("/:id", async (req, res) => {
                 user: {
                     select: {
                         id: true, name: true, avatarUrl: true, 
-                        city: true, neighborhood: true, phone: true
+                        city: true, neighborhood: true, phone: true,
+                        latitude: true, longitude: true,
                     }
                 }
             }
