@@ -134,7 +134,7 @@ adminRoutes.patch("/users/:id/toggle-active", async (req, res) => {
 
 
 // Mapa de calor
-adminRoutes.get("/admin/heatmap", async (req, res) => {
+adminRoutes.get("/heatmap", async (req, res) => {
   try {
     const usersLocation = await prisma.user.findMany({
       where: {
@@ -142,9 +142,13 @@ adminRoutes.get("/admin/heatmap", async (req, res) => {
         longitude: { not: null }
       },
       select: {
+        id: true, 
+        name: true,
         latitude: true,
         longitude: true,
-        role: true 
+        role: true,
+        neighborhood: true,
+        city: true
       }
     });
     return res.json(usersLocation);
