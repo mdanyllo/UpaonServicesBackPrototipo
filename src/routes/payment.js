@@ -45,12 +45,13 @@ async function aplicarVantagem(providerId, type) {
   }
 }
 
+
+
 payRoutes.post('/', async (req, res) => {
   try {
     let { formData, providerId, type } = req.body;
     const payment = new Payment(client);
 
-    // Validação de existência do Provider para evitar erro P2003
     let validProvider = await prisma.provider.findUnique({ where: { id: providerId } });
 
     if (!validProvider) {
@@ -63,17 +64,39 @@ payRoutes.post('/', async (req, res) => {
 
     const tabelaPrecos = { 'FEATURED': 19.90, 'ACTIVATION': 1.99 };
     const precoReal = tabelaPrecos[type] || 2.00; 
+    const tituloItem = type === 'ACTIVATION' ? "Ativação de Conta" : "Destaque no Site";
 
     const paymentResponse = await payment.create({
       body: {
         transaction_amount: precoReal, 
         token: formData.token,
-        description: type === 'ACTIVATION' ? "Ativação UpaonServices" : "Destaque UpaonServices",
+        description: `Upaon Services - ${tituloItem}`,
         installments: formData.installments,
         payment_method_id: formData.payment_method_id,
         issuer_id: formData.issuer_id,
+
+        notification_url: 'https://apiupaonservices.ddns.net/payment/webhook',
+        
+        external_reference: `PROV_${providerId}_${type}_${Date.now()}`,
+        
+        statement_descriptor: 'UPAON SERVICES',
+
+        additional_info: {
+             items: [
+                {
+                    id: type,
+                    title: tituloItem,
+                    description: type === 'ACTIVATION' ? 'Liberação de acesso a serviços' : 'Destaque na lista de profissionais',
+                    quantity: 1,
+                    unit_price: precoReal,
+                    category_id: 'services'
+                }
+             ]
+        },
+
         payer: {
           email: formData.payer?.email,
+          first_name: formData.payer?.firstName || 'Cliente',
           identification: {
             type: formData.payer?.identification?.type || 'CPF',
             number: String(formData.payer?.identification?.number || formData.identification?.number || '').replace(/\D/g, '') 
@@ -109,10 +132,12 @@ payRoutes.post('/', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erro no processamento:', error.api_response?.content || error);
+    console.error('Erro no processamento:', error); // Log mais limpo
     res.status(500).json({ error: 'Erro interno ao processar' });
   }
 });
+
+
 
 payRoutes.post('/webhook', async (req, res) => {
   const { action, data } = req.body;
