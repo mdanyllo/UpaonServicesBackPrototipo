@@ -72,7 +72,7 @@ payRoutes.post('/', async (req, res) => {
         external_reference: `PROV_${providerId}_${type}_${Date.now()}`,
         token: formData.token,
         description: `Upaon Services - ${tituloItem}`,
-        installments: formData.installments,
+        iinstallments: Number(formData.installments),
         payment_method_id: formData.payment_method_id,
         issuer_id: formData.issuer_id,
 
@@ -87,11 +87,17 @@ payRoutes.post('/', async (req, res) => {
                     title: tituloItem,
                     description: type === 'ACTIVATION' ? 'Liberação de acesso a serviços' : 'Destaque na lista de profissionais',
                     quantity: 1,
-                    category_id: 'services' || 'others',
+                    category_id: 'services',
                     unit_price: Number(precoReal),
                 }
              ]
         },
+
+        payer: {
+            first_name: formData.payer?.firstName || 'Cliente',
+            last_name: formData.payer?.lastName || 'Sobrenome',
+            registration_date: new Date().toISOString() 
+          },
 
         payer: {
           email: formData.payer?.email,
@@ -99,8 +105,7 @@ payRoutes.post('/', async (req, res) => {
           last_name: formData.payer?.lastName || 'Sobrenome',
           identification: {
             type: formData.payer?.identification?.type || 'CPF',
-            number: String(formData.payer?.identification?.number || formData.identification?.number || '').replace(/\D/g, ''),
-            registration_date: new Date().toISOString()
+            number: String(formData.payer?.identification?.number || formData.identification?.number || '').replace(/\D/g, '')
           },
         },
       },
