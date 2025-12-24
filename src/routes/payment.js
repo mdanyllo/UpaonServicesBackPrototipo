@@ -68,7 +68,8 @@ payRoutes.post('/', async (req, res) => {
 
     const paymentResponse = await payment.create({
       body: {
-        transaction_amount: precoReal, 
+        transaction_amount: precoReal,
+        external_reference: `PROV_${providerId}_${type}_${Date.now()}`,
         token: formData.token,
         description: `Upaon Services - ${tituloItem}`,
         installments: formData.installments,
@@ -76,10 +77,8 @@ payRoutes.post('/', async (req, res) => {
         issuer_id: formData.issuer_id,
 
         notification_url: 'https://apiupaonservices.ddns.net/payment/webhook',
-        
-        external_reference: `PROV_${providerId}_${type}_${Date.now()}`,
-        
-        statement_descriptor: 'UPAON SERVICES',
+
+        statement_descriptor: 'UPAONSERVICES',
 
         additional_info: {
              items: [
@@ -88,8 +87,8 @@ payRoutes.post('/', async (req, res) => {
                     title: tituloItem,
                     description: type === 'ACTIVATION' ? 'Liberação de acesso a serviços' : 'Destaque na lista de profissionais',
                     quantity: 1,
-                    unit_price: precoReal,
-                    category_id: 'services'
+                    category_id: 'services' || 'others',
+                    unit_price: Number(precoReal),
                 }
              ]
         },
@@ -97,9 +96,11 @@ payRoutes.post('/', async (req, res) => {
         payer: {
           email: formData.payer?.email,
           first_name: formData.payer?.firstName || 'Cliente',
+          last_name: formData.payer?.lastName || 'Sobrenome',
           identification: {
             type: formData.payer?.identification?.type || 'CPF',
-            number: String(formData.payer?.identification?.number || formData.identification?.number || '').replace(/\D/g, '') 
+            number: String(formData.payer?.identification?.number || formData.identification?.number || '').replace(/\D/g, ''),
+            registration_date: new Date().toISOString()
           },
         },
       },
