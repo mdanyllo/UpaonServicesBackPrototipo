@@ -68,49 +68,51 @@ payRoutes.post('/', async (req, res) => {
 
     const paymentResponse = await payment.create({
       body: {
+        // --- 1. FINANCEIRO E IDENTIFICAÇÃO ---
         transaction_amount: precoReal,
-        external_reference: `PROV_${providerId}_${type}_${Date.now()}`,
         token: formData.token,
         description: `Upaon Services - ${tituloItem}`,
         installments: Number(formData.installments),
         payment_method_id: formData.payment_method_id,
         issuer_id: formData.issuer_id,
 
+        // --- 2. CONCILIAÇÃO (Ações Obrigatórias que estão falhando) ---
+        // Garante que o robô veja esses campos na raiz do body
+        external_reference: `PROV_${providerId}_${type}_${Date.now()}`.substring(0, 60),
         notification_url: 'https://apiupaonservices.ddns.net/payment/webhook',
+        statement_descriptor: 'UPAONSERV', // Máximo 13 caracteres, sem espaços se possível
 
-        statement_descriptor: 'UPAONSERVICES',
-
+        // --- 3. SEGURANÇA E ANTIFRAUDE (additional_info) ---
         additional_info: {
-             items: [
-                {
-                    id: type,
-                    title: tituloItem,
-                    description: type === 'ACTIVATION' ? 'Liberação de acesso a serviços' : 'Destaque na lista de profissionais',
-                    quantity: 1,
-                    category_id: 'services',
-                    unit_price: Number(precoReal),
-                }
-             ]
-        },
-
-        payer: {
+          items: [
+            {
+              id: String(type),
+              title: tituloItem,
+              description: tituloItem,
+              category_id: 'services',
+              quantity: 1,
+              unit_price: Number(precoReal)
+            }
+          ],
+          payer: {
             first_name: formData.payer?.firstName || 'Cliente',
             last_name: formData.payer?.lastName || 'Sobrenome',
-            registration_date: new Date().toISOString() 
-          },
+            registration_date: new Date().toISOString()
+          }
+        },
 
+        // --- 4. DADOS DO COMPRADOR (payer raiz) ---
         payer: {
           email: formData.payer?.email,
           first_name: formData.payer?.firstName || 'Cliente',
           last_name: formData.payer?.lastName || 'Sobrenome',
           identification: {
             type: formData.payer?.identification?.type || 'CPF',
-            number: String(formData.payer?.identification?.number || formData.identification?.number || '').replace(/\D/g, '')
-          },
-        },
-      },
+            number: String(formData.payer?.identification?.number || '').replace(/\D/g, '')
+          }
+        }
+      }
     });
-
     console.log(`Pagamento MP: ${paymentResponse.status} - ${paymentResponse.status_detail}`);
 
     // Cria registro no banco
