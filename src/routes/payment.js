@@ -72,7 +72,7 @@ payRoutes.post('/', async (req, res) => {
         external_reference: `PROV_${providerId}_${type}_${Date.now()}`,
         token: formData.token,
         description: `Upaon Services - ${tituloItem}`,
-        iinstallments: Number(formData.installments),
+        installments: Number(formData.installments),
         payment_method_id: formData.payment_method_id,
         issuer_id: formData.issuer_id,
 
