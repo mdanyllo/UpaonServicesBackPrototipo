@@ -43,7 +43,7 @@ model Provider {
   
   rating          Float     @default(5.0)
 
-  isActive        Boolean   @default(false)    
+  isActive        Boolean   @default(true)    
   activatedUntil  DateTime?                      
   
   isFeatured      Boolean   @default(false)      
