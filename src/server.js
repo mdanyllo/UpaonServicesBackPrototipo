@@ -14,18 +14,14 @@ import reviewsRoutes from "./routes/reviews.js"
 import payRoutes from "./routes/payment.js"
 
 const app = express()
-const prisma = new PrismaClient() // Adicionado
+const prisma = new PrismaClient()
 
 const PORT = process.env.PORT || 3333
-const SELF_PING_URL = "https://upaonservicesbackprototipo.onrender.com"
 
 app.use(
   cors({
     origin: (origin, callback) => {
       const allowedOrigins = [
-        "http://localhost:8080",
-        "http://localhost:3000",
-        "http://localhost:5173",
         "https://upaonservices.vercel.app",
         "https://upaonservices.com.br",
         "https://www.upaonservices.com.br",

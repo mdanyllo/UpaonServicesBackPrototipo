@@ -2,7 +2,11 @@ import { Router } from "express"
 import { prisma } from "../prisma.js"
 import { cloudinary, upload } from "../lib/cloudinary.js"
 import { ensureAuthenticated } from "../middlewares/auth.js"
+import { exclude } from "../middlewares/exclude.js"
 import fs from "fs"
+
+const safeUser = excludeFields(userFromDb, ['password', 'role', 'cpf']);
+res.json(safeUser);
 
 const userRoutes = Router() 
 
