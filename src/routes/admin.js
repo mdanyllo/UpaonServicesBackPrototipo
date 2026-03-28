@@ -7,7 +7,6 @@ const adminRoutes = Router()
 
 adminRoutes.use(ensureAuthenticated, ensureAdmin)
 
-
 // 1. STATS (Mantive igual)
 adminRoutes.get("/stats", async (req, res) => {
   const [totalUsers, totalProviders, totalContacts, paymentsSum] = await Promise.all([
@@ -28,9 +27,7 @@ adminRoutes.get("/stats", async (req, res) => {
   })
 })
 
-
-
-// 2. LISTAR USUÁRIOS (COM PAGINAÇÃO E BUSCA)
+// 2. LISTAR USUÁRIOS (Paginação e Busca)
 adminRoutes.get("/users", async (req, res) => {
     const { q, page = 1, limit = 10 } = req.query
     
@@ -68,9 +65,7 @@ adminRoutes.get("/users", async (req, res) => {
     })
 })
 
-
-
-// 3. ALTERAR STATUS DE "DESTAQUE" (FEATURED)
+// 3. ALTERAR STATUS DE "DESTAQUE" (Refatorado para 30 dias)
 adminRoutes.patch("/providers/:providerId/toggle-feature", async (req, res) => {
     const { providerId } = req.params
 
@@ -78,21 +73,31 @@ adminRoutes.patch("/providers/:providerId/toggle-feature", async (req, res) => {
 
     if (!provider) return res.status(404).json({ error: "Prestador não encontrado" })
 
+    const novoStatusDestaque = !provider.isFeatured
+    let dataDestaque = null
+
+    // Se estiver ATIVANDO o destaque, somamos 30 dias
+    if (novoStatusDestaque) {
+        const trintaDias = new Date()
+        trintaDias.setDate(trintaDias.getDate() + 30)
+        dataDestaque = trintaDias
+    }
+
     const updated = await prisma.provider.update({
         where: { id: providerId },
-        data: { isFeatured: !provider.isFeatured }
+        data: { 
+            isFeatured: novoStatusDestaque,
+            featuredUntil: dataDestaque // Se desativar, vira null. Se ativar, +30 dias.
+        }
     })
 
     return res.json(updated)
 })
 
-
-
-// 4. ALTERAR STATUS (ATIVA / DESATIVA)
+// 4. ALTERAR STATUS ATIVO/INATIVO (Manual e Independente)
 adminRoutes.patch("/users/:id/toggle-active", async (req, res) => {
     const { id } = req.params;
     try {
-        // 1. Primeiro buscamos o estado atual do provider
         const user = await prisma.user.findUnique({
             where: { id },
             include: { provider: true }
@@ -102,26 +107,17 @@ adminRoutes.patch("/users/:id/toggle-active", async (req, res) => {
             return res.status(404).json({ message: "Prestador não encontrado." });
         }
 
-        // 2. Invertemos o valor de isActive
         const novoStatus = !user.provider.isActive;
-
-        // 3. Se estivermos ATIVANDO, definimos uma data de expiração (ex: +30 dias)
-        // Se estivermos DESATIVANDO, removemos o destaque também
-        const dataUpdate = {
-            isActive: novoStatus,
-            isFeatured: novoStatus ? user.provider.isFeatured : false
-        };
-
-        // Se estiver ativando agora e não tiver data, damos 30 dias de bônus ou mantemos a atual
-        if (novoStatus && !user.provider.activatedUntil) {
-            const dataExpiracao = new Date();
-            dataExpiracao.setDate(dataExpiracao.getDate() + 30);
-            dataUpdate.activatedUntil = dataExpiracao;
-        }
 
         await prisma.provider.update({
             where: { userId: id },
-            data: dataUpdate
+            data: {
+                isActive: novoStatus,
+                // Se você desativar o usuário, o destaque morre por segurança.
+                // Mas se ativar, o destaque não volta sozinho (precisa clicar no botão de destaque).
+                isFeatured: novoStatus ? user.provider.isFeatured : false,
+                featuredUntil: novoStatus ? user.provider.featuredUntil : null
+            }
         });
 
         return res.json({ message: `Usuário ${novoStatus ? 'ativado' : 'desativado'} com sucesso.` });
@@ -131,9 +127,7 @@ adminRoutes.patch("/users/:id/toggle-active", async (req, res) => {
     }
 })
 
-
-
-// Mapa de calor
+// Mapa de calor (Mantive igual)
 adminRoutes.get("/heatmap", async (req, res) => {
   try {
     const usersLocation = await prisma.user.findMany({

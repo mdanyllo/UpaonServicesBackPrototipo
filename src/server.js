@@ -26,6 +26,9 @@ app.use(
         "https://upaonservices.com.br",
         "https://www.upaonservices.com.br",
         "https://upaonservices-dztrwykxe-mdanyllos-projects.vercel.app",
+        "http://localhost:8080",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
       ]
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true)
@@ -163,19 +166,55 @@ cron.schedule("0 8 * * *", async () => {
 
     // === 3. LIMPEZA E DESATIVAÇÃO (EXPIRADOS HOJE) ===
     
-    // Desativar Ativações expiradas
-    const expirados = await prisma.provider.updateMany({
-      where: { activatedUntil: { lt: hoje }, isActive: true },
-      data: { isActive: false, isFeatured: false }
+    // 1. Primeiro, buscamos quem está com destaque vencido para pegar os dados
+    const expiradosDestaque = await prisma.provider.findMany({
+      where: { 
+        featuredUntil: { lt: hoje }, 
+        isFeatured: true 
+      },
+      include: { user: true } // Para pegar o nome e email do Markus
     });
 
-    // Desativar apenas Destaques expirados
-    const destaquesVencidos = await prisma.provider.updateMany({
-      where: { featuredUntil: { lt: hoje }, isFeatured: true },
-      data: { isFeatured: false }
-    });
+    if (expiradosDestaque.length > 0) {
+      // 2. Criamos a lista de texto para o seu email
+      const listaPrestadores = expiradosDestaque
+        .map(p => `- ${p.user.name} (${p.user.email})`)
+        .join('<br>');
 
-    console.log(`[CRON] Sucesso: Avisos enviados. Contas suspensas: ${expirados.count}. Destaques removidos: ${destaquesVencidos.count}.`);
+      // 3. Removemos o destaque deles no banco
+      await prisma.provider.updateMany({
+        where: { 
+          id: { in: expiradosDestaque.map(p => p.id) } 
+        },
+        data: { isFeatured: false }
+      });
+
+      // 4. Enviamos o relatório para o seu email
+      await resend.emails.send({
+        from: 'Sistema UpaonServices <nao-responda@upaonservices.com.br>',
+        to: 'contatoupaonservices@gmail.com',
+        subject: `📊 Relatório de Destaques Expirados - ${hoje.toLocaleDateString('pt-BR')}`,
+        html: `
+          <div style="font-family: sans-serif; color: #333;">
+            <h2>Relatório de Destaques Removidos</h2>
+            <p>Os seguintes prestadores tiveram o destaque expirado hoje e voltaram para a listagem comum:</p>
+            <div style="background: #f4f4f4; padding: 15px; border-radius: 8px;">
+              ${listaPrestadores}
+            </div>
+            <p><strong>Total:</strong> ${expiradosDestaque.length} prestadores.</p>
+            <hr>
+            <p style="font-size: 12px; color: #999;">UpaonServices - Maranhão</p>
+          </div>
+        `
+      });
+      
+      console.log(`[CRON] Relatório enviado para o admin. ${expiradosDestaque.length} destaques removidos.`);
+    } else {
+      console.log(`[CRON] Nenhum destaque expirou hoje.`);
+    }
+
+    // OBS: A parte que desativava o "isActive" foi removida conforme combinamos, 
+    // garantindo que eles continuem ativos para sempre.
 
   } catch (err) {
     console.error("Erro no fluxo do Resend/Cron:", err);
