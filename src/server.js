@@ -13,6 +13,11 @@ import providersRoutes from "./routes/providers.js"
 import reviewsRoutes from "./routes/reviews.js"
 import payRoutes from "./routes/payment.js"
 
+import { Resend } from "resend";
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+const SELF_PING_URL = "https://apiupaonservices.ddns.net" 
+
 const app = express()
 const prisma = new PrismaClient()
 
@@ -152,7 +157,7 @@ cron.schedule("0 8 * * *", async () => {
                 ${tresDiasPraFrente.toLocaleDateString('pt-BR')}
               </p>
             </div>
-            <a href="https://upaonservices.com.br/dashboard" 
+            <a href="https://upaonservices.com.br/dashboard/prestador" 
                style="display: block; margin-top: 30px; background: #eab308; color: #000000; text-align: center; padding: 15px; border-radius: 8px; text-decoration: none; font-weight: bold;">
                RENOVAR DESTAQUE AGORA
             </a>

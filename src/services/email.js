@@ -4,6 +4,7 @@ const apiKey = process.env.RESEND_API_KEY;
 const resend = new Resend(apiKey);
 
 
+
 const fromEmail = 'Equipe UpaonServices <nao-responda@upaonservices.com.br>'; 
 
 
